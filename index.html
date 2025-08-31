@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Presupuesto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-[#B0E0E6]">
+    <div id="app" class="max-w-md mx-auto p-4">
+        <nav class="flex justify-around bg-[#E0FFFF] rounded-t-lg shadow-md">
+            <button data-tab="resumen" class="tab-button flex-1 p-4 text-center font-bold border-b-4 border-[#00FA9A]">Resumen</button>
+            <button data-tab="ingresos" class="tab-button flex-1 p-4 text-center">Ingresos</button>
+            <button data-tab="gastos" class="tab-button flex-1 p-4 text-center">Gastos</button>
+            <button data-tab="deuda" class="tab-button flex-1 p-4 text-center">Deuda</button>
+            <button data-tab="settings" class="tab-button flex-1 p-4 text-center">Settings</button>
+        </nav>
+
+        <main id="content" class="bg-[#E0FFFF] p-4 rounded-b-lg shadow-md min-h-[400px]">
+            <div id="resumen-content" class="tab-content space-y-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-center text-gray-700">Disponible este mes</h2>
+                    <p id="resumen-disponible" class="text-4xl font-bold text-center text-green-600">$0.00</p>
+                </div>
+                <div class="w-full max-w-xs mx-auto">
+                    <canvas id="resumen-chart"></canvas>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between p-2 bg-green-100 rounded">
+                        <span class="font-semibold">Total Ingresos:</span>
+                        <span id="resumen-total-ingresos" class="font-bold text-green-700">$0.00</span>
+                    </div>
+                    <div class="flex justify-between p-2 bg-red-100 rounded">
+                        <span class="font-semibold">Total Gastos:</span>
+                        <span id="resumen-total-gastos" class="font-bold text-red-700">$0.00</span>
+                    </div>
+                     <div class="flex justify-between p-2 bg-orange-100 rounded">
+                        <span class="font-semibold">Pagos de Deuda Mensual:</span>
+                        <span id="resumen-total-deuda-mensual" class="font-bold text-orange-700">$0.00</span>
+                    </div>
+                </div>
+                <hr>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-700">Deuda Total Pendiente</h3>
+                    <p id="resumen-deuda-total" class="text-2xl font-bold text-center text-red-800">$0.00</p>
+                </div>
+            </div>
+            <div id="ingresos-content" class="tab-content hidden">
+                <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-gray-700">Añadir Ingreso</h2>
+                    <div class="space-y-2">
+                        <label for="ingreso-categoria" class="block text-sm font-medium text-gray-700">Categoría</label>
+                        <select id="ingreso-categoria" class="w-full p-2 border rounded-md"></select>
+                        <label for="ingreso-descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                        <input type="text" id="ingreso-descripcion" class="w-full p-2 border rounded-md" placeholder="Ej. Salario mensual">
+                        <label for="ingreso-cantidad" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                        <input type="number" id="ingreso-cantidad" class="w-full p-2 border rounded-md" placeholder="1500.00">
+                    </div>
+                    <button id="add-ingreso" class="w-full font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir Ingreso</button>
+                    <hr class="my-4">
+                    <h2 class="text-xl font-bold text-gray-700">Historial de Ingresos</h2>
+                    <ul id="ingresos-list" class="space-y-2">
+                        <!-- Ingresos items will be appended here -->
+                    </ul>
+                </div>
+            </div>
+            <div id="gastos-content" class="tab-content hidden">
+                <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-gray-700">Añadir Gasto</h2>
+                    <div class="space-y-2">
+                        <label for="gasto-categoria" class="block text-sm font-medium text-gray-700">Categoría</label>
+                        <select id="gasto-categoria" class="w-full p-2 border rounded-md"></select>
+                        <label for="gasto-descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                        <input type="text" id="gasto-descripcion" class="w-full p-2 border rounded-md" placeholder="Ej. Compra semanal">
+                        <label for="gasto-cantidad" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                        <input type="number" id="gasto-cantidad" class="w-full p-2 border rounded-md" placeholder="120.50">
+                    </div>
+                    <button id="add-gasto" class="w-full font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir Gasto</button>
+                    <hr class="my-4">
+                    <h2 class="text-xl font-bold text-gray-700">Historial de Gastos</h2>
+                    <ul id="gastos-list" class="space-y-2">
+                        <!-- Gastos items will be appended here -->
+                    </ul>
+                </div>
+            </div>
+            <div id="deuda-content" class="tab-content hidden">
+                <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-gray-700">Añadir Deuda</h2>
+                    <div class="space-y-2">
+                        <label for="deuda-tipo" class="block text-sm font-medium text-gray-700">Tipo</label>
+                        <select id="deuda-tipo" class="w-full p-2 border rounded-md"></select>
+                        <label for="deuda-descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                        <input type="text" id="deuda-descripcion" class="w-full p-2 border rounded-md" placeholder="Ej. Préstamo de coche">
+                        <label for="deuda-pago-mensual" class="block text-sm font-medium text-gray-700">Pago Mensual</label>
+                        <input type="number" id="deuda-pago-mensual" class="w-full p-2 border rounded-md" placeholder="350.00">
+                        <label for="deuda-total" class="block text-sm font-medium text-gray-700">Total Adeudado</label>
+                        <input type="number" id="deuda-total" class="w-full p-2 border rounded-md" placeholder="15000.00">
+                    </div>
+                    <button id="add-deuda" class="w-full font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir Deuda</button>
+                    <hr class="my-4">
+                    <h2 class="text-xl font-bold text-gray-700">Historial de Deudas</h2>
+                    <ul id="deudas-list" class="space-y-2">
+                        <!-- Deudas items will be appended here -->
+                    </ul>
+                </div>
+            </div>
+            <div id="settings-content" class="tab-content hidden">
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-700 mb-2">Gestionar Categorías</h2>
+                        <!-- Ingresos Categories -->
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-600">Ingresos</h3>
+                            <ul id="ingresos-categories-list" class="space-y-1 mt-1"></ul>
+                            <div class="flex space-x-2 mt-2">
+                                <input type="text" id="new-ingreso-category" class="w-full p-2 border rounded-md" placeholder="Nueva categoría de ingreso">
+                                <button id="add-ingreso-category" class="font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir</button>
+                            </div>
+                        </div>
+                        <!-- Gastos Categories -->
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-600">Gastos</h3>
+                            <ul id="gastos-categories-list" class="space-y-1 mt-1"></ul>
+                            <div class="flex space-x-2 mt-2">
+                                <input type="text" id="new-gasto-category" class="w-full p-2 border rounded-md" placeholder="Nueva categoría de gasto">
+                                <button id="add-gasto-category" class="font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir</button>
+                            </div>
+                        </div>
+                        <!-- Deuda Categories -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-600">Deuda</h3>
+                            <ul id="deuda-categories-list" class="space-y-1 mt-1"></ul>
+                            <div class="flex space-x-2 mt-2">
+                                <input type="text" id="new-deuda-category" class="w-full p-2 border rounded-md" placeholder="Nueva categoría de deuda">
+                                <button id="add-deuda-category" class="font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir</button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-700 mb-2">Datos de la App</h2>
+                        <div class="flex space-x-2">
+                             <button id="export-data" class="flex-1 font-bold py-2 px-4 rounded shadow bg-[#20B2AA] hover:bg-teal-600 text-white">Exportar Datos</button>
+                             <button id="import-data" class="flex-1 font-bold py-2 px-4 rounded shadow bg-[#20B2AA] hover:bg-teal-600 text-white">Importar Datos</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="js/app.js" type="module"></script>
+</body>
+</html>
