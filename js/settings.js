@@ -97,6 +97,9 @@ function handleImport() {
                 const newState = JSON.parse(event.target.result);
                 // Basic validation
                 if (newState && newState.ingresos && newState.gastos && newState.deudas && newState.categories) {
+                    if (!newState.executedPayments) {
+                        newState.executedPayments = [];
+                    }
                     if (confirm('¿Está seguro? Esto sobreescribirá todos sus datos actuales.')) {
                         saveState(newState);
                         alert('Datos importados con éxito. La aplicación se recargará.');

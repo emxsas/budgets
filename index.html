@@ -9,13 +9,27 @@
 </head>
 <body class="bg-[#B0E0E6]">
     <div id="app" class="max-w-md mx-auto p-4">
-        <nav class="flex justify-around bg-[#E0FFFF] rounded-t-lg shadow-md">
-            <button data-tab="resumen" class="tab-button flex-1 p-4 text-center font-bold border-b-4 border-[#00FA9A]">Resumen</button>
-            <button data-tab="ingresos" class="tab-button flex-1 p-4 text-center">Ingresos</button>
-            <button data-tab="gastos" class="tab-button flex-1 p-4 text-center">Gastos</button>
-            <button data-tab="deuda" class="tab-button flex-1 p-4 text-center">Deuda</button>
-            <button data-tab="settings" class="tab-button flex-1 p-4 text-center">Settings</button>
-        </nav>
+        <div class="relative">
+            <button id="menu-button" class="w-full bg-[#E0FFFF] p-4 text-left font-bold rounded-t-lg shadow-md">
+                Resumen
+            </button>
+            <nav id="menu-dropdown" class="absolute z-10 w-full bg-[#E0FFFF] rounded-b-lg shadow-md">
+                <button data-tab="resumen" class="tab-button w-full p-4 text-left">Resumen</button>
+                <button data-tab="ingresos" class="tab-button w-full p-4 text-left">Ingresos</button>
+                <button data-tab="gastos" class="tab-button w-full p-4 text-left">Gastos</button>
+                <button data-tab="deuda" class="tab-button w-full p-4 text-left">Deuda</button>
+                <button data-tab="ejecucion" class="tab-button w-full p-4 text-left">Ejecucion</button>
+                <button data-tab="settings" class="tab-button w-full p-4 text-left">Settings</button>
+            </nav>
+        </div>
+        <style>
+            #menu-dropdown {
+                display: none;
+            }
+            #menu-dropdown.active {
+                display: block;
+            }
+        </style>
 
         <main id="content" class="bg-[#E0FFFF] p-4 rounded-b-lg shadow-md min-h-[400px]">
             <div id="resumen-content" class="tab-content space-y-4">
@@ -102,6 +116,17 @@
                     <h2 class="text-xl font-bold text-gray-700">Historial de Deudas</h2>
                     <ul id="deudas-list" class="space-y-2">
                         <!-- Deudas items will be appended here -->
+                    </ul>
+                </div>
+            </div>
+            <div id="ejecucion-content" class="tab-content hidden">
+                <div class="space-y-4">
+                    <h2 class="text-2xl font-bold text-center text-gray-700">Monto Restante</h2>
+                    <p id="ejecucion-restante" class="text-4xl font-bold text-center text-green-600">$0.00</p>
+                    <hr>
+                    <h2 class="text-xl font-bold text-gray-700">Pagos a Realizar</h2>
+                    <ul id="ejecucion-list" class="space-y-2">
+                        <!-- Execution items will be appended here -->
                     </ul>
                 </div>
             </div>
