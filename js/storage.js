@@ -27,8 +27,10 @@ export function initState() {
  * @returns {object} The application state.
  */
 export function getState() {
-    const state = localStorage.getItem(APP_STATE_KEY);
-    return state ? JSON.parse(state) : defaultState;
+    const storedState = localStorage.getItem(APP_STATE_KEY);
+    const state = storedState ? JSON.parse(storedState) : defaultState;
+    // Ensure that the state is always in sync with the default state structure
+    return { ...defaultState, ...state };
 }
 
 /**
