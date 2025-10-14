@@ -16,23 +16,31 @@ document.addEventListener('DOMContentLoaded', () => {
     initSettings(); // Initialize Settings tab functionality
     initResumen(); // Initialize Resumen tab on load
 
+    const menuButton = document.getElementById('menu-button');
+    const menuDropdown = document.getElementById('menu-dropdown');
     const tabs = document.querySelectorAll('.tab-button');
     const contents = document.querySelectorAll('.tab-content');
 
+    menuButton.addEventListener('click', () => {
+        menuDropdown.classList.toggle('active');
+    });
+
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            // Deactivate all tabs
-            tabs.forEach(t => {
-                t.classList.remove('border-b-4', 'border-primary-button', 'font-bold');
-            });
+            // Hide all content
             contents.forEach(c => {
                 c.classList.add('hidden');
             });
 
-            // Activate clicked tab
-            tab.classList.add('border-b-4', 'border-primary-button', 'font-bold');
+            // Show selected content
             const contentId = `${tab.dataset.tab}-content`;
             document.getElementById(contentId).classList.remove('hidden');
+
+            // Update menu button text
+            menuButton.textContent = tab.textContent;
+
+            // Hide dropdown
+            menuDropdown.classList.remove('active');
 
             // Special action for resumen tab to ensure chart renders correctly
             if (tab.dataset.tab === 'resumen') {
