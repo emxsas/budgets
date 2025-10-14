@@ -18,6 +18,7 @@
                 <button data-tab="ingresos" class="tab-button w-full p-4 text-left">Ingresos</button>
                 <button data-tab="gastos" class="tab-button w-full p-4 text-left">Gastos</button>
                 <button data-tab="deuda" class="tab-button w-full p-4 text-left">Deuda</button>
+                <button data-tab="ejecucion" class="tab-button w-full p-4 text-left">Ejecucion</button>
                 <button data-tab="settings" class="tab-button w-full p-4 text-left">Settings</button>
             </nav>
         </div>
@@ -115,6 +116,17 @@
                     <h2 class="text-xl font-bold text-gray-700">Historial de Deudas</h2>
                     <ul id="deudas-list" class="space-y-2">
                         <!-- Deudas items will be appended here -->
+                    </ul>
+                </div>
+            </div>
+            <div id="ejecucion-content" class="tab-content hidden">
+                <div class="space-y-4">
+                    <h2 class="text-2xl font-bold text-center text-gray-700">Monto Restante</h2>
+                    <p id="ejecucion-restante" class="text-4xl font-bold text-center text-green-600">$0.00</p>
+                    <hr>
+                    <h2 class="text-xl font-bold text-gray-700">Pagos a Realizar</h2>
+                    <ul id="ejecucion-list" class="space-y-2">
+                        <!-- Execution items will be appended here -->
                     </ul>
                 </div>
             </div>

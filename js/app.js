@@ -5,6 +5,7 @@ import { initGastos } from './gastos.js';
 import { initDeuda } from './deuda.js';
 import { initSettings } from './settings.js';
 import { initResumen } from './resumen.js';
+import { initEjecucion } from './ejecucion.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App Loaded");
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initGastos(); // Initialize Gastos tab functionality
     initDeuda(); // Initialize Deuda tab functionality
     initSettings(); // Initialize Settings tab functionality
+    initEjecucion(); // Initialize Ejecucion tab functionality
     initResumen(); // Initialize Resumen tab on load
 
     const menuButton = document.getElementById('menu-button');
@@ -45,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Special action for resumen tab to ensure chart renders correctly
             if (tab.dataset.tab === 'resumen') {
                 initResumen();
+            } else if (tab.dataset.tab === 'ejecucion') {
+                initEjecucion();
             }
         });
     });

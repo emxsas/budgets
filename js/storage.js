@@ -4,6 +4,7 @@ const defaultState = {
     ingresos: [],
     gastos: [],
     deudas: [],
+    executedPayments: [],
     categories: {
         ingresos: ["Salario", "Ventas", "Regalo", "Otros"],
         gastos: ["Comida", "Transporte", "Vivienda", "Ocio", "Facturas", "Otros"],
@@ -106,6 +107,26 @@ export function addDeuda(deuda) {
     const state = getState();
     state.deudas.push({ id: Date.now(), ...deuda });
     saveState(state);
+}
+
+// --- Executed Payments Functions ---
+
+export function addExecutedPayment(paymentId) {
+    const state = getState();
+    if (!state.executedPayments.includes(paymentId)) {
+        state.executedPayments.push(paymentId);
+        saveState(state);
+    }
+}
+
+export function removeExecutedPayment(paymentId) {
+    const state = getState();
+    state.executedPayments = state.executedPayments.filter(id => id !== paymentId);
+    saveState(state);
+}
+
+export function getExecutedPayments() {
+    return getState().executedPayments;
 }
 
 export function getDeudas() {
