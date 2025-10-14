@@ -42,31 +42,21 @@ function renderEjecucion() {
             <span>${payment.descripcion}</span>
             <span class="font-bold">$${payment.cantidad.toFixed(2)}</span>
             <div class="flex space-x-2">
-                <button class="execute-btn p-1 rounded ${isExecuted ? 'hidden' : 'bg-green-500 text-white'}" data-id="${payment.id}">Ejecutar</button>
-                <button class="undo-btn p-1 rounded ${isExecuted ? 'bg-yellow-500 text-white' : 'hidden'}" data-id="${payment.id}">Deshacer</button>
+                <button class="p-1 rounded ${isExecuted ? 'hidden' : 'bg-green-500 text-white'}" onclick="executePayment(${payment.id})">Ejecutar</button>
+                <button class="p-1 rounded ${isExecuted ? 'bg-yellow-500 text-white' : 'hidden'}" onclick="undoPayment(${payment.id})">Deshacer</button>
             </div>
         `;
 
         ejecucionListEl.appendChild(li);
     });
-
-    addEventListeners();
 }
 
-function addEventListeners() {
-    document.querySelectorAll('.execute-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = e.target.getAttribute('data-id');
-            addExecutedPayment(id);
-            renderEjecucion();
-        });
-    });
+window.executePayment = function(id) {
+    addExecutedPayment(id);
+    renderEjecucion();
+}
 
-    document.querySelectorAll('.undo-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = e.target.getAttribute('data-id');
-            removeExecutedPayment(id);
-            renderEjecucion();
-        });
-    });
+window.undoPayment = function(id) {
+    removeExecutedPayment(id);
+    renderEjecucion();
 }
