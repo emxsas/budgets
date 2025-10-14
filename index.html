@@ -9,13 +9,26 @@
 </head>
 <body class="bg-[#B0E0E6]">
     <div id="app" class="max-w-md mx-auto p-4">
-        <nav class="flex justify-around bg-[#E0FFFF] rounded-t-lg shadow-md">
-            <button data-tab="resumen" class="tab-button flex-1 p-4 text-center font-bold border-b-4 border-[#00FA9A]">Resumen</button>
-            <button data-tab="ingresos" class="tab-button flex-1 p-4 text-center">Ingresos</button>
-            <button data-tab="gastos" class="tab-button flex-1 p-4 text-center">Gastos</button>
-            <button data-tab="deuda" class="tab-button flex-1 p-4 text-center">Deuda</button>
-            <button data-tab="settings" class="tab-button flex-1 p-4 text-center">Settings</button>
-        </nav>
+        <div class="relative">
+            <button id="menu-button" class="w-full bg-[#E0FFFF] p-4 text-left font-bold rounded-t-lg shadow-md">
+                Resumen
+            </button>
+            <nav id="menu-dropdown" class="absolute z-10 w-full bg-[#E0FFFF] rounded-b-lg shadow-md">
+                <button data-tab="resumen" class="tab-button w-full p-4 text-left">Resumen</button>
+                <button data-tab="ingresos" class="tab-button w-full p-4 text-left">Ingresos</button>
+                <button data-tab="gastos" class="tab-button w-full p-4 text-left">Gastos</button>
+                <button data-tab="deuda" class="tab-button w-full p-4 text-left">Deuda</button>
+                <button data-tab="settings" class="tab-button w-full p-4 text-left">Settings</button>
+            </nav>
+        </div>
+        <style>
+            #menu-dropdown {
+                display: none;
+            }
+            #menu-dropdown.active {
+                display: block;
+            }
+        </style>
 
         <main id="content" class="bg-[#E0FFFF] p-4 rounded-b-lg shadow-md min-h-[400px]">
             <div id="resumen-content" class="tab-content space-y-4">
