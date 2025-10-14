@@ -17,11 +17,11 @@ function renderEjecucion() {
     const deudas = getDeudas();
     const executedPayments = getExecutedPayments();
 
-    const totalIngresos = ingresos.reduce((sum, i) => sum + i.cantidad, 0);
+    const totalIngresos = ingresos.reduce((sum, i) => sum + parseFloat(i.cantidad), 0);
 
     const allPayments = [
-        ...gastos.map(g => ({ ...g, type: 'gasto' })),
-        ...deudas.map(d => ({ ...d, cantidad: d.pagoMensual, type: 'deuda' }))
+        ...gastos.map(g => ({ ...g, cantidad: parseFloat(g.cantidad), type: 'gasto' })),
+        ...deudas.map(d => ({ ...d, cantidad: parseFloat(d.pagoMensual), type: 'deuda' }))
     ];
 
     const totalExecuted = allPayments
