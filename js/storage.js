@@ -5,6 +5,7 @@ const defaultState = {
     gastos: [],
     deudas: [],
     executedPayments: [],
+    appliedIncomes: [],
     categories: {
         ingresos: ["Salario", "Ventas", "Regalo", "Otros"],
         gastos: ["Comida", "Transporte", "Vivienda", "Ocio", "Facturas", "Otros"],
@@ -129,6 +130,26 @@ export function removeExecutedPayment(paymentId) {
 
 export function getExecutedPayments() {
     return getState().executedPayments;
+}
+
+// --- Applied Incomes Functions ---
+
+export function addAppliedIncome(incomeId) {
+    const state = getState();
+    if (!state.appliedIncomes.includes(incomeId)) {
+        state.appliedIncomes.push(incomeId);
+        saveState(state);
+    }
+}
+
+export function removeAppliedIncome(incomeId) {
+    const state = getState();
+    state.appliedIncomes = state.appliedIncomes.filter(id => id !== incomeId);
+    saveState(state);
+}
+
+export function getAppliedIncomes() {
+    return getState().appliedIncomes;
 }
 
 export function getDeudas() {
