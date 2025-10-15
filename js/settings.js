@@ -100,6 +100,9 @@ function handleImport() {
                     if (!newState.executedPayments) {
                         newState.executedPayments = [];
                     }
+                    if (!newState.appliedIncomes) {
+                        newState.appliedIncomes = [];
+                    }
                     if (confirm('¿Está seguro? Esto sobreescribirá todos sus datos actuales.')) {
                         saveState(newState);
                         alert('Datos importados con éxito. La aplicación se recargará.');
