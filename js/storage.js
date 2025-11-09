@@ -3,6 +3,7 @@ const APP_STATE_KEY = 'budgetAppData';
 const defaultState = {
     ingresos: [],
     gastos: [],
+    gastosRecurrentes: [],
     deudas: [],
     executedPayments: [],
     appliedIncomes: [],
@@ -102,6 +103,32 @@ export function updateGasto(updatedGasto) {
 
 export function getGastoCategories() {
     return getState().categories.gastos;
+}
+
+// --- Gastos Recurrentes Functions ---
+
+export function addGastoRecurrente(gasto) {
+    const state = getState();
+    state.gastosRecurrentes.push({ id: Date.now(), ...gasto });
+    saveState(state);
+}
+
+export function getGastosRecurrentes() {
+    return getState().gastosRecurrentes;
+}
+
+export function deleteGastoRecurrente(id) {
+    const state = getState();
+    state.gastosRecurrentes = state.gastosRecurrentes.filter(gasto => gasto.id !== id);
+    saveState(state);
+}
+
+export function updateGastoRecurrente(updatedGasto) {
+    const state = getState();
+    state.gastosRecurrentes = state.gastosRecurrentes.map(gasto =>
+        gasto.id === updatedGasto.id ? updatedGasto : gasto
+    );
+    saveState(state);
 }
 
 // --- Deudas Functions ---

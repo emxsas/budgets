@@ -1,4 +1,4 @@
-import { getIngresos, getGastos, getDeudas, getExecutedPayments, addExecutedPayment, removeExecutedPayment, getAppliedIncomes, addAppliedIncome, removeAppliedIncome } from './storage.js';
+import { getIngresos, getGastos, getDeudas, getExecutedPayments, addExecutedPayment, removeExecutedPayment, getAppliedIncomes, addAppliedIncome, removeAppliedIncome, getGastosRecurrentes } from './storage.js';
 
 const ejecucionContent = document.getElementById('ejecucion-content');
 const restanteEl = document.getElementById('ejecucion-restante');
@@ -15,6 +15,7 @@ export function initEjecucion() {
 function renderEjecucion() {
     const ingresos = getIngresos();
     const gastos = getGastos();
+    const gastosRecurrentes = getGastosRecurrentes();
     const deudas = getDeudas();
     const executedPayments = getExecutedPayments();
     const appliedIncomes = getAppliedIncomes();
@@ -25,6 +26,7 @@ function renderEjecucion() {
 
     const allPayments = [
         ...gastos.map(g => ({ ...g, cantidad: parseFloat(g.cantidad), type: 'gasto' })),
+        ...gastosRecurrentes.map(g => ({ ...g, cantidad: parseFloat(g.cantidad), type: 'gasto-recurrente' })),
         ...deudas.map(d => ({ ...d, cantidad: parseFloat(d.pagoMensual), type: 'deuda' }))
     ];
 

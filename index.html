@@ -16,7 +16,8 @@
             <nav id="menu-dropdown" class="absolute z-10 w-full bg-[#E0FFFF] rounded-b-lg shadow-md">
                 <button data-tab="resumen" class="tab-button w-full p-4 text-left">Resumen</button>
                 <button data-tab="ingresos" class="tab-button w-full p-4 text-left">Ingresos</button>
-                <button data-tab="gastos" class="tab-button w-full p-4 text-left">Gastos</button>
+                <button data-tab="gastos-recurrentes" class="tab-button w-full p-4 text-left">Gastos Recurrentes</button>
+                <button data-tab="gastos" class="tab-button w-full p-4 text-left">Gastos Extras</button>
                 <button data-tab="deuda" class="tab-button w-full p-4 text-left">Deuda</button>
                 <button data-tab="ejecucion" class="tab-button w-full p-4 text-left">Ejecucion</button>
                 <button data-tab="settings" class="tab-button w-full p-4 text-left">Settings</button>
@@ -79,9 +80,28 @@
                     </ul>
                 </div>
             </div>
+            <div id="gastos-recurrentes-content" class="tab-content hidden">
+                <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-gray-700">Añadir Gasto Recurrente</h2>
+                    <div class="space-y-2">
+                        <label for="gasto-recurrente-categoria" class="block text-sm font-medium text-gray-700">Categoría</label>
+                        <select id="gasto-recurrente-categoria" class="w-full p-2 border rounded-md"></select>
+                        <label for="gasto-recurrente-descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                        <input type="text" id="gasto-recurrente-descripcion" class="w-full p-2 border rounded-md" placeholder="Ej. Compra semanal">
+                        <label for="gasto-recurrente-cantidad" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                        <input type="number" id="gasto-recurrente-cantidad" class="w-full p-2 border rounded-md" placeholder="120.50">
+                    </div>
+                    <button id="add-gasto-recurrente" class="w-full font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir Gasto Recurrente</button>
+                    <hr class="my-4">
+                    <h2 class="text-xl font-bold text-gray-700">Historial de Gastos Recurrentes</h2>
+                    <ul id="gastos-recurrentes-list" class="space-y-2">
+                        <!-- Gastos Recurrentes items will be appended here -->
+                    </ul>
+                </div>
+            </div>
             <div id="gastos-content" class="tab-content hidden">
                 <div class="space-y-4">
-                    <h2 class="text-xl font-bold text-gray-700">Añadir Gasto</h2>
+                    <h2 class="text-xl font-bold text-gray-700">Añadir Gasto Extra</h2>
                     <div class="space-y-2">
                         <label for="gasto-categoria" class="block text-sm font-medium text-gray-700">Categoría</label>
                         <select id="gasto-categoria" class="w-full p-2 border rounded-md"></select>
@@ -90,9 +110,9 @@
                         <label for="gasto-cantidad" class="block text-sm font-medium text-gray-700">Cantidad</label>
                         <input type="number" id="gasto-cantidad" class="w-full p-2 border rounded-md" placeholder="120.50">
                     </div>
-                    <button id="add-gasto" class="w-full font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir Gasto</button>
+                    <button id="add-gasto" class="w-full font-bold py-2 px-4 rounded shadow bg-[#00FA9A] hover:bg-green-400 text-gray-800">Añadir Gasto Extra</button>
                     <hr class="my-4">
-                    <h2 class="text-xl font-bold text-gray-700">Historial de Gastos</h2>
+                    <h2 class="text-xl font-bold text-gray-700">Historial de Gastos Extras</h2>
                     <ul id="gastos-list" class="space-y-2">
                         <!-- Gastos items will be appended here -->
                     </ul>

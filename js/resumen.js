@@ -1,4 +1,4 @@
-import { getIngresos, getGastos, getDeudas } from './storage.js';
+import { getIngresos, getGastos, getDeudas, getGastosRecurrentes } from './storage.js';
 
 // DOM Elements
 const disponibleEl = document.getElementById('resumen-disponible');
@@ -17,7 +17,7 @@ function formatCurrency(value) {
 export function updateResumen() {
     // Calculations
     const totalIngresos = getIngresos().reduce((sum, item) => sum + parseFloat(item.cantidad), 0);
-    const totalGastos = getGastos().reduce((sum, item) => sum + parseFloat(item.cantidad), 0);
+    const totalGastos = getGastos().reduce((sum, item) => sum + parseFloat(item.cantidad), 0) + getGastosRecurrentes().reduce((sum, item) => sum + parseFloat(item.cantidad), 0);
     const totalDeudaMensual = getDeudas().reduce((sum, item) => sum + parseFloat(item.pagoMensual), 0);
     const disponible = totalIngresos - totalGastos - totalDeudaMensual;
     const deudaTotal = getDeudas().reduce((sum, item) => sum + parseFloat(item.total), 0);

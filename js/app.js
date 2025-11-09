@@ -2,6 +2,7 @@ import { setupUI } from './ui.js';
 import { initState } from './storage.js';
 import { initIngresos } from './ingresos.js';
 import { initGastos } from './gastos.js';
+import { initGastosRecurrentes } from './gastosRecurrentes.js';
 import { initDeuda } from './deuda.js';
 import { initSettings } from './settings.js';
 import { initResumen } from './resumen.js';
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUI();
     initIngresos(); // Initialize Ingresos tab functionality
     initGastos(); // Initialize Gastos tab functionality
+    initGastosRecurrentes(); // Initialize Gastos Recurrentes tab functionality
     initDeuda(); // Initialize Deuda tab functionality
     initSettings(); // Initialize Settings tab functionality
     initEjecucion(); // Initialize Ejecucion tab functionality
