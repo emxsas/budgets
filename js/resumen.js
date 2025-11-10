@@ -3,7 +3,8 @@ import { getIngresos, getGastos, getDeudas, getGastosRecurrentes } from './stora
 // DOM Elements
 const disponibleEl = document.getElementById('resumen-disponible');
 const totalIngresosEl = document.getElementById('resumen-total-ingresos');
-const totalGastosEl = document.getElementById('resumen-total-gastos');
+const totalGastosRecurrentesEl = document.getElementById('resumen-total-gastos-recurrentes');
+const totalGastosExtrasEl = document.getElementById('resumen-total-gastos-extras');
 const totalDeudaMensualEl = document.getElementById('resumen-total-deuda-mensual');
 const deudaTotalEl = document.getElementById('resumen-deuda-total');
 const chartCanvas = document.getElementById('resumen-chart');
@@ -17,7 +18,9 @@ function formatCurrency(value) {
 export function updateResumen() {
     // Calculations
     const totalIngresos = getIngresos().reduce((sum, item) => sum + parseFloat(item.cantidad), 0);
-    const totalGastos = getGastos().reduce((sum, item) => sum + parseFloat(item.cantidad), 0) + getGastosRecurrentes().reduce((sum, item) => sum + parseFloat(item.cantidad), 0);
+    const totalGastosRecurrentes = getGastosRecurrentes().reduce((sum, item) => sum + parseFloat(item.cantidad), 0);
+    const totalGastosExtras = getGastos().reduce((sum, item) => sum + parseFloat(item.cantidad), 0);
+    const totalGastos = totalGastosRecurrentes + totalGastosExtras;
     const totalDeudaMensual = getDeudas().reduce((sum, item) => sum + parseFloat(item.pagoMensual), 0);
     const disponible = totalIngresos - totalGastos - totalDeudaMensual;
     const deudaTotal = getDeudas().reduce((sum, item) => sum + parseFloat(item.total), 0);
@@ -25,16 +28,17 @@ export function updateResumen() {
     // Render Text Summary
     disponibleEl.textContent = formatCurrency(disponible);
     totalIngresosEl.textContent = formatCurrency(totalIngresos);
-    totalGastosEl.textContent = formatCurrency(totalGastos);
+    totalGastosRecurrentesEl.textContent = formatCurrency(totalGastosRecurrentes);
+    totalGastosExtrasEl.textContent = formatCurrency(totalGastosExtras);
     totalDeudaMensualEl.textContent = formatCurrency(totalDeudaMensual);
     deudaTotalEl.textContent = formatCurrency(deudaTotal);
 
     // Chart Data
     const chartData = {
-        labels: ['Gastos', 'Deuda Mensual', 'Disponible'],
+        labels: ['Gastos Recurrentes', 'Gastos Extras', 'Deuda Mensual', 'Disponible'],
         datasets: [{
-            data: [totalGastos, totalDeudaMensual, disponible > 0 ? disponible : 0],
-            backgroundColor: ['#EF4444', '#F97316', '#22C55E'],
+            data: [totalGastosRecurrentes, totalGastosExtras, totalDeudaMensual, disponible > 0 ? disponible : 0],
+            backgroundColor: ['#EF4444', '#DC2626', '#F97316', '#22C55E'],
             hoverOffset: 4
         }]
     };
