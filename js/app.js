@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDeuda(); // Initialize Deuda tab functionality
     initSettings(); // Initialize Settings tab functionality
     initEjecucion(); // Initialize Ejecucion tab functionality
-    initResumen(); // Initialize Resumen tab on load
+    initResumen(); // Initialize Resumen tab functionality on load
 
     const menuButton = document.getElementById('menu-button');
     const menuDropdown = document.getElementById('menu-dropdown');
