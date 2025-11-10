@@ -30,9 +30,41 @@ export function initState() {
  */
 export function getState() {
     const storedState = localStorage.getItem(APP_STATE_KEY);
-    const state = storedState ? JSON.parse(storedState) : defaultState;
-    // Ensure that the state is always in sync with the default state structure
-    return { ...defaultState, ...state };
+    const state = storedState ? JSON.parse(storedState) : {};
+
+    const isObject = (item) => {
+        return (item && typeof item === 'object' && !Array.isArray(item));
+    };
+
+    const deepMerge = (target, source) => {
+        let output = { ...target };
+        if (isObject(target) && isObject(source)) {
+            Object.keys(source).forEach(key => {
+                if (isObject(source[key])) {
+                    if (!(key in target)) {
+                        Object.assign(output, { [key]: source[key] });
+                    } else {
+                        output[key] = deepMerge(target[key], source[key]);
+                    }
+                } else {
+                    Object.assign(output, { [key]: source[key] });
+                }
+            });
+        }
+        return output;
+    };
+
+    const finalState = deepMerge(defaultState, state);
+
+    // Ensure backward compatibility for missing arrays that might not be in older stored states
+    if (!finalState.executedPayments) {
+        finalState.executedPayments = [];
+    }
+    if (!finalState.appliedIncomes) {
+        finalState.appliedIncomes = [];
+    }
+
+    return finalState;
 }
 
 /**
