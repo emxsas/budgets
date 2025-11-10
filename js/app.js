@@ -51,8 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 initResumen();
             } else if (tab.dataset.tab === 'ejecucion') {
                 initEjecucion();
-            } else if (tab.dataset.tab === 'gastos-recurrentes') {
-                initGastosRecurrentes();
             }
         });
     });
