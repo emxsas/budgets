@@ -181,6 +181,15 @@ export function addExecutedPayment(paymentId) {
     }
 }
 
+export function addExecutedPayments(paymentIds) {
+    const state = getState();
+    const newPayments = paymentIds.filter(id => !state.executedPayments.includes(id));
+    if (newPayments.length > 0) {
+        state.executedPayments.push(...newPayments);
+        saveState(state);
+    }
+}
+
 export function removeExecutedPayment(paymentId) {
     const state = getState();
     state.executedPayments = state.executedPayments.filter(id => id !== paymentId);
