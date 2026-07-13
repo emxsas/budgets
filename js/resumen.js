@@ -1,8 +1,8 @@
 // Resumen (summary) view: available-this-month hero, category donut
 // (conic-gradient, no chart library), income-vs-expense bars, savings rate and
 // a pending-debt preview. Reads exclusively from storage.js getters.
-import { getIngresos, getGastos, getGastosRecurrentes, getDeudas } from './storage.js';
-import { fmt, fmt0, sum, esc } from './ui.js';
+import { getIngresos, getGastos, getGastosRecurrentes, getDeudas, getPresupuestos } from './storage.js';
+import { fmt, fmt0, sum, esc, icon } from './ui.js';
 
 // Deuda is always red and the folded "Otros" slice is always grey; every other
 // category draws from this palette (which deliberately excludes red) by rank.
@@ -24,20 +24,25 @@ export function renderResumen() {
     if (!el) return;
 
     const ingresos = getIngresos(), rec = getGastosRecurrentes(), ext = getGastos(), deudas = getDeudas();
+    const presupuestos = getPresupuestos();
     const totIng = sum(ingresos, x => x.cantidad);
     const totRec = sum(rec, x => x.cantidad);
     const totExt = sum(ext, x => x.cantidad);
     const totDeudaMes = sum(deudas, x => x.pagoMensual);
-    const totGastos = totRec + totExt + totDeudaMes;
+    // Presupuestos count their full limit (the envelope) toward Resumen totals.
+    const totPresupLimite = sum(presupuestos, p => p.limite);
+    const totPresupGastado = presupuestos.reduce((acc, p) => acc + sum(p.items || [], it => it.cantidad), 0);
+    const totGastos = totRec + totExt + totDeudaMes + totPresupLimite;
     const disp = totIng - totGastos;
     const deudaTotal = sum(deudas, x => x.total);
     const dispColor = disp >= 0 ? '#34d399' : '#f43f5e';
 
-    // spending by category (recurrentes + extras + monthly debt), top 6
+    // spending by category (recurrentes + extras + monthly debt + each envelope), top slices
     const catMap = {};
     rec.forEach(x => { catMap[x.categoria] = (catMap[x.categoria] || 0) + (parseFloat(x.cantidad) || 0); });
     ext.forEach(x => { catMap[x.categoria] = (catMap[x.categoria] || 0) + (parseFloat(x.cantidad) || 0); });
     if (totDeudaMes > 0) catMap['Deuda'] = (catMap['Deuda'] || 0) + totDeudaMes;
+    presupuestos.forEach(p => { const l = parseFloat(p.limite) || 0; if (l > 0) catMap[p.nombre] = (catMap[p.nombre] || 0) + l; });
     const allCats = Object.keys(catMap)
         .map(k => ({ name: k, amount: catMap[k] }))
         .sort((a, b) => b.amount - a.amount);
@@ -101,6 +106,19 @@ export function renderResumen() {
         }).join('')
         : `<div style="font-size:12px;color:#5f6d73">Sin deudas registradas.</div>`;
 
+    // Entry card into the Presupuestos section (also the mobile access point).
+    const presupCard = presupuestos.length ? `
+        <div data-tab="presupuestos" style="background:#161a1d;border:1px solid #21282c;border-radius:18px;padding:15px 16px;cursor:pointer">
+            <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:36px;height:36px;border-radius:11px;background:#1e1a2e;color:#a78bfa;display:flex;align-items:center;justify-content:center;flex:none">${icon('presupuestos', { size: 19, sw: 1.9 })}</span>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:14px;font-weight:700">Presupuestos</div>
+                    <div class="num" style="font-size:11.5px;color:#7c8a92;font-weight:600">Gastado ${fmt0(totPresupGastado)} de ${fmt0(totPresupLimite)}</div>
+                </div>
+                <span style="color:#5f6d73;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+            </div>
+        </div>` : '';
+
     el.innerHTML = `<div style="display:flex;flex-direction:column;gap:18px">
         <div>
             <div class="num" style="font-size:13px;font-weight:600;color:#7c8a92">Disponible este mes</div>
@@ -139,6 +157,8 @@ export function renderResumen() {
                 <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:9px">${catLegend}</div>
             </div>
         </div>
+
+        ${presupCard}
 
         <div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 12px">

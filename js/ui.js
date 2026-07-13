@@ -33,6 +33,8 @@ const PATHS = {
     resumen: '<path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/>',
     movimientos: '<path d="M7 7h13M7 7 4 4M7 7 4 10"/><path d="M17 17H4M17 17l3 3M17 17l3-3"/>',
     deuda: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/>',
+    presupuestos: '<path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 10h18"/><path d="M16 14h2"/>',
+    back: '<path d="M15 6l-6 6 6 6"/>',
     ejecucion: '<path d="M9 5h11M9 12h11M9 19h11M4 5l1 1 2-2M4 12l1 1 2-2M4 19l1 1 2-2"/>',
     ajustes: '<circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
@@ -64,6 +66,7 @@ export function checkboxRow(id, label, checked) {
 const NAV = [
     { tab: 'resumen', label: 'Resumen' },
     { tab: 'movimientos', label: 'Movimientos' },
+    { tab: 'presupuestos', label: 'Presupuestos' },
     { tab: 'deuda', label: 'Deuda' },
     { tab: 'ejecucion', label: 'Ejecución' },
     { tab: 'ajustes', label: 'Ajustes' }

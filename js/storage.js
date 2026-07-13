@@ -5,6 +5,7 @@ const defaultState = {
     gastos: [],
     gastosRecurrentes: [],
     deudas: [],
+    presupuestos: [],
     executedPayments: [],
     appliedIncomes: [],
     categories: {
@@ -63,6 +64,9 @@ export function getState() {
     if (!finalState.appliedIncomes) {
         finalState.appliedIncomes = [];
     }
+    if (!finalState.presupuestos) {
+        finalState.presupuestos = [];
+    }
 
     return finalState;
 }
@@ -110,8 +114,58 @@ export function resetMonth() {
     const state = getState();
     state.gastos = [];
     state.ingresos = state.ingresos.filter(i => !i.efimero);
+    // Presupuestos are configurable: those flagged "mensual" have their line-items
+    // cleared (the envelope + limit survive); the rest are left untouched.
+    state.presupuestos = state.presupuestos.map(p => p.mensual ? { ...p, items: [] } : p);
     state.executedPayments = [];
     state.appliedIncomes = [];
+    saveState(state);
+}
+
+// --- Presupuestos (spending envelopes) ---
+
+export function getPresupuestos() {
+    return getState().presupuestos;
+}
+
+/** Upsert a presupuesto (envelope). Preserves `items` when editing. */
+export function savePresupuesto(p) {
+    const state = getState();
+    const id = p.id != null ? p.id : Date.now();
+    const idx = state.presupuestos.findIndex(x => x.id === id);
+    if (idx >= 0) {
+        state.presupuestos[idx] = { ...state.presupuestos[idx], nombre: p.nombre, limite: p.limite, mensual: !!p.mensual };
+    } else {
+        state.presupuestos.push({ id, nombre: p.nombre, limite: p.limite, mensual: !!p.mensual, items: [] });
+    }
+    saveState(state);
+}
+
+export function deletePresupuesto(id) {
+    const state = getState();
+    state.presupuestos = state.presupuestos.filter(p => p.id !== id);
+    saveState(state);
+}
+
+/** Upsert a line-item inside a presupuesto. */
+export function savePresupuestoItem(presupuestoId, item) {
+    const state = getState();
+    const p = state.presupuestos.find(x => x.id === presupuestoId);
+    if (!p) return;
+    if (!Array.isArray(p.items)) p.items = [];
+    const id = item.id != null ? item.id : Date.now();
+    const idx = p.items.findIndex(x => x.id === id);
+    const obj = { id, descripcion: item.descripcion, cantidad: item.cantidad };
+    if (idx >= 0) p.items[idx] = obj;
+    else p.items.push(obj);
+    saveState(state);
+}
+
+export function deletePresupuestoItem(presupuestoId, itemId) {
+    const state = getState();
+    const p = state.presupuestos.find(x => x.id === presupuestoId);
+    if (!p || !Array.isArray(p.items)) return;
+    p.items = p.items.filter(it => it.id !== itemId);
     saveState(state);
 }
 
