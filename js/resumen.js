@@ -106,18 +106,23 @@ export function renderResumen() {
         }).join('')
         : `<div style="font-size:12px;color:#5f6d73">Sin deudas registradas.</div>`;
 
-    // Entry card into the Presupuestos section (also the mobile access point).
-    const presupCard = presupuestos.length ? `
+    // Entry card into the Presupuestos section. Always shown — on mobile the
+    // sidebar is hidden and the bottom bar has no Presupuestos tab, so this card
+    // is the only access point (must appear even with zero presupuestos).
+    const presupSub = presupuestos.length
+        ? `<span class="num">Gastado ${fmt0(totPresupGastado)} de ${fmt0(totPresupLimite)}</span>`
+        : 'Crea tu primer presupuesto';
+    const presupCard = `
         <div data-tab="presupuestos" style="background:#161a1d;border:1px solid #21282c;border-radius:18px;padding:15px 16px;cursor:pointer">
             <div style="display:flex;align-items:center;gap:12px">
                 <span style="width:36px;height:36px;border-radius:11px;background:#1e1a2e;color:#a78bfa;display:flex;align-items:center;justify-content:center;flex:none">${icon('presupuestos', { size: 19, sw: 1.9 })}</span>
                 <div style="flex:1;min-width:0">
                     <div style="font-size:14px;font-weight:700">Presupuestos</div>
-                    <div class="num" style="font-size:11.5px;color:#7c8a92;font-weight:600">Gastado ${fmt0(totPresupGastado)} de ${fmt0(totPresupLimite)}</div>
+                    <div style="font-size:11.5px;color:#7c8a92;font-weight:600">${presupSub}</div>
                 </div>
                 <span style="color:#5f6d73;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
             </div>
-        </div>` : '';
+        </div>`;
 
     el.innerHTML = `<div style="display:flex;flex-direction:column;gap:18px">
         <div>
