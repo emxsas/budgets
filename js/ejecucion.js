@@ -1,147 +1,134 @@
-import { getIngresos, getGastos, getDeudas, getExecutedPayments, addExecutedPayment, addExecutedPayments, removeExecutedPayment, getAppliedIncomes, addAppliedIncome, removeAppliedIncome, getGastosRecurrentes } from './storage.js';
-
-const ejecucionContent = document.getElementById('ejecucion-content');
-const restanteEl = document.getElementById('ejecucion-restante');
-const ejecucionListEl = document.getElementById('ejecucion-list');
-const ejecucionIngresosListEl = document.getElementById('ejecucion-ingresos-list');
+// Ejecución (execution) view. The underlying flow is unchanged and still wired
+// to the existing storage.js primitives (applied incomes + executed payments +
+// bulk execute); only the presentation is reworked to the new design.
+import {
+    getIngresos, getGastos, getGastosRecurrentes, getDeudas,
+    getExecutedPayments, addExecutedPayments, removeExecutedPayment,
+    getAppliedIncomes, addAppliedIncome, removeAppliedIncome
+} from './storage.js';
+import { fmt, fmt0, sum, esc, icon } from './ui.js';
 
 let selectedIds = [];
 
-export function initEjecucion() {
-    if (ejecucionContent.classList.contains('hidden')) {
-        return;
-    }
-    selectedIds = [];
-    renderEjecucion();
-}
-
-function renderEjecucion() {
-    const ingresos = getIngresos();
-    const gastos = getGastos();
-    const gastosRecurrentes = getGastosRecurrentes();
-    const deudas = getDeudas();
-    const executedPayments = getExecutedPayments();
-    const appliedIncomes = getAppliedIncomes();
-
-    const totalIngresos = ingresos
-        .filter(i => appliedIncomes.includes(i.id))
-        .reduce((sum, i) => sum + parseFloat(i.cantidad), 0);
-
-    const allPayments = [
-        ...gastos.map(g => ({ ...g, cantidad: parseFloat(g.cantidad), type: 'gasto' })),
-        ...gastosRecurrentes.map(g => ({ ...g, cantidad: parseFloat(g.cantidad), type: 'gasto-recurrente' })),
-        ...deudas.map(d => ({ ...d, cantidad: parseFloat(d.pagoMensual), type: 'deuda' }))
+function allPayments() {
+    return [
+        ...getGastos().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Gasto extra', color: '#f43f5e' })),
+        ...getGastosRecurrentes().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Recurrente', color: '#22d3ee' })),
+        ...getDeudas().map(d => ({ id: d.id, desc: d.descripcion, amount: parseFloat(d.pagoMensual) || 0, source: d.tipo, sourceType: 'Deuda', color: '#f97316' }))
     ];
+}
 
-    const totalExecuted = allPayments
-        .filter(p => executedPayments.includes(p.id))
-        .reduce((sum, p) => sum + p.cantidad, 0);
+export function renderEjecucion() {
+    const el = document.getElementById('ejecucion-section');
+    if (!el) return;
 
-    const totalSeleccionado = allPayments
-        .filter(p => selectedIds.includes(p.id))
-        .reduce((sum, p) => sum + p.cantidad, 0);
+    const ingresos = getIngresos();
+    const applied = getAppliedIncomes();
+    const executed = getExecutedPayments();
+    const payments = allPayments();
 
-    const restante = totalIngresos - totalExecuted - totalSeleccionado;
-    restanteEl.textContent = `$${restante.toFixed(2)}`;
+    const totApplied = sum(ingresos.filter(i => applied.includes(i.id)), i => i.cantidad);
+    const totExecuted = sum(payments.filter(p => executed.includes(p.id)), p => p.amount);
+    const totSel = sum(payments.filter(p => selectedIds.includes(p.id)), p => p.amount);
+    const restante = totApplied - totExecuted - totSel;
 
-    ejecucionIngresosListEl.innerHTML = '';
+    const incomeRows = ingresos.length
+        ? ingresos.map(i => {
+            const ap = applied.includes(i.id);
+            const btn = `flex:none;border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;${ap ? 'background:#3a2e12;color:#fbbf24' : 'background:#1c3a2e;color:#34d399'}`;
+            return `<div style="display:flex;align-items:center;gap:12px;background:${ap ? '#12291f' : '#161a1d'};border:1px solid ${ap ? '#2a5544' : '#21282c'};border-radius:13px;padding:12px 14px">
+                <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">${esc(i.descripcion)}</div><div style="font-size:11px;color:#7c8a92;font-weight:600">${esc(i.categoria)}</div></div>
+                <span class="num" style="font-size:14px;font-weight:700;color:#34d399">${fmt0(i.cantidad)}</span>
+                <button data-action="toggle-income" data-id="${i.id}" style="${btn}">${ap ? 'Quitar' : 'Aplicar'}</button>
+            </div>`;
+        }).join('')
+        : `<div style="font-size:12px;color:#5f6d73;padding:4px 2px">Sin ingresos para aplicar.</div>`;
 
-    ingresos.forEach(income => {
-        const isApplied = appliedIncomes.includes(income.id);
-        const li = document.createElement('li');
-        li.className = `flex justify-between items-center p-2 rounded bg-blue-200`;
+    const paymentRows = payments.length
+        ? payments.map(p => {
+            const ex = executed.includes(p.id);
+            const se = selectedIds.includes(p.id);
+            const checked = ex || se;
+            const rowBg = ex ? '#12291f' : se ? '#1a2f28' : '#161a1d';
+            const rowBorder = ex ? '#2a5544' : se ? '#34d399' : '#21282c';
+            const check = checked ? icon('check', { size: 13, sw: 3.2 }) : '';
+            return `<div ${ex ? '' : `data-action="tap-payment" data-id="${p.id}"`} style="display:flex;align-items:center;gap:11px;border-radius:13px;padding:12px 14px;transition:all .12s;background:${rowBg};border:1px solid ${rowBorder};cursor:${ex ? 'default' : 'pointer'}">
+                <div style="width:22px;height:22px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;border:1.5px solid ${checked ? '#34d399' : '#3a444a'};background:${checked ? '#34d399' : 'transparent'};color:#06231a">${check}</div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:13.5px;font-weight:600;${ex ? 'text-decoration:line-through;color:#7c8a92' : ''}">${esc(p.desc)}</div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                        <span style="width:7px;height:7px;border-radius:2px;flex:none;background:${p.color}"></span>
+                        <span style="font-size:10.5px;font-weight:700;color:${p.color}">${esc(p.source)}</span>
+                        <span style="font-size:9.5px;font-weight:600;color:#7c8a92;background:#0e1113;padding:1px 6px;border-radius:99px">${p.sourceType}</span>
+                    </div>
+                </div>
+                <span class="num" style="font-size:14px;font-weight:700;flex:none;${ex ? 'color:#7c8a92' : 'color:#fff'}">${fmt0(p.amount)}</span>
+                ${ex ? `<button data-action="undo" data-id="${p.id}" style="flex:none;background:#3a2e12;border:1px solid #4a3a18;color:#fbbf24;font-size:11px;font-weight:700;padding:5px 9px;border-radius:8px;cursor:pointer">Deshacer</button>` : ''}
+            </div>`;
+        }).join('')
+        : `<div style="font-size:12px;color:#5f6d73;padding:4px 2px">Sin pagos por realizar.</div>`;
 
-        li.innerHTML = `
-            <span>${income.descripcion}</span>
-            <span class="font-bold">$${parseFloat(income.cantidad).toFixed(2)}</span>
-            <div class="flex space-x-2">
-                <button class="p-1 rounded ${isApplied ? 'bg-yellow-500 text-white' : 'bg-blue-500 text-white'}" onclick="${isApplied ? 'unapplyIncome' : 'applyIncome'}(${income.id})">${isApplied ? 'Desaplicar' : 'Aplicar'}</button>
-            </div>
-        `;
+    const bulk = selectedIds.length
+        ? `<div style="margin-bottom:4px;padding:2px 0 0;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;gap:8px">
+                    <button data-bulk="execute" style="flex:1;background:#1c3a2e;border:1px solid #2a5544;color:#34d399;font-weight:700;padding:11px;border-radius:11px;cursor:pointer">Ejecutar (${selectedIds.length})</button>
+                    <button data-bulk="cancel" style="flex:1;background:#1c2226;border:1px solid #2a3237;color:#9aa7ad;font-weight:700;padding:11px;border-radius:11px;cursor:pointer">Cancelar</button>
+                </div>
+                <p class="num" style="text-align:center;font-weight:700;color:#c3cdd2;margin:0">Total seleccionado: ${fmt0(totSel)}</p>
+           </div>`
+        : '';
 
-        ejecucionIngresosListEl.appendChild(li);
-    });
+    el.innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="border-radius:20px;padding:20px;text-align:center">
+            <div style="font-size:12.5px;font-weight:600;color:#7c8a92">Monto restante por aplicar</div>
+            <div class="num" style="font-size:44px;font-weight:700;letter-spacing:-1.5px;margin-top:2px;color:${restante >= 0 ? '#34d399' : '#f43f5e'}">${fmt(restante)}</div>
+            <div style="font-size:11.5px;color:#7c8a92;font-weight:600">Ingresos aplicados − pagos ejecutados</div>
+        </div>
+        <div>
+            <div style="font-size:13.5px;font-weight:700;margin:0 2px 10px;color:#c3cdd2">Ingresos a aplicar</div>
+            <div style="display:flex;flex-direction:column;gap:8px">${incomeRows}</div>
+        </div>
+        <div>
+            <div style="font-size:13.5px;font-weight:700;margin:0 2px 10px;color:#c3cdd2">Pagos a realizar <span style="color:#7c8a92;font-weight:600;font-size:12px">· toca para seleccionar</span></div>
+            ${bulk}
+            <div style="display:flex;flex-direction:column;gap:8px">${paymentRows}</div>
+        </div>
+    </div>`;
+}
 
-    ejecucionListEl.innerHTML = '';
-
-    if (selectedIds.length > 0) {
-        const bulkActions = document.createElement('div');
-        bulkActions.className = 'mb-4 p-2 bg-gray-100 rounded shadow-sm space-y-2';
-        bulkActions.innerHTML = `
-            <div class="flex space-x-2">
-                <button class="flex-1 bg-green-500 text-white font-bold py-2 rounded hover:bg-green-600" onclick="bulkExecute()">Ejecutar</button>
-                <button class="flex-1 bg-gray-500 text-white font-bold py-2 rounded hover:bg-gray-600" onclick="cancelSelection()">Cancelar</button>
-            </div>
-            <p class="text-center font-bold text-gray-700">Total Seleccionado: $${totalSeleccionado.toFixed(2)}</p>
-        `;
-        ejecucionListEl.appendChild(bulkActions);
-    }
-
-    allPayments.forEach(payment => {
-        const isExecuted = executedPayments.includes(payment.id);
-        const isSelected = selectedIds.includes(payment.id);
-        const li = document.createElement('li');
-
-        let classes = `flex justify-between items-center p-2 rounded transition-all cursor-pointer `;
-        if (isExecuted) {
-            classes += 'bg-green-200';
-        } else {
-            classes += isSelected ? 'bg-red-400 scale-[1.02] shadow-md z-10' : 'bg-red-200 hover:bg-red-300';
+export function initEjecucion() {
+    const el = document.getElementById('ejecucion-section');
+    el.addEventListener('click', (e) => {
+        const bulk = e.target.closest('[data-bulk]');
+        if (bulk) {
+            if (bulk.dataset.bulk === 'execute') { addExecutedPayments(selectedIds); selectedIds = []; }
+            else { selectedIds = []; }
+            renderEjecucion();
+            return;
         }
-
-        li.className = classes;
-        if (!isExecuted) {
-            li.onclick = () => toggleSelection(payment.id);
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const id = parseInt(btn.dataset.id, 10);
+        switch (btn.dataset.action) {
+            case 'toggle-income': {
+                if (getAppliedIncomes().includes(id)) removeAppliedIncome(id);
+                else addAppliedIncome(id);
+                renderEjecucion();
+                break;
+            }
+            case 'tap-payment': {
+                selectedIds = selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : selectedIds.concat(id);
+                renderEjecucion();
+                break;
+            }
+            case 'undo': {
+                removeExecutedPayment(id);
+                renderEjecucion();
+                break;
+            }
         }
-
-        li.innerHTML = `
-            <span>${payment.descripcion}</span>
-            <span class="font-bold">$${payment.cantidad.toFixed(2)}</span>
-            <div class="flex space-x-2">
-                <button class="p-1 rounded ${isExecuted ? 'bg-yellow-500 text-white' : 'hidden'}" onclick="event.stopPropagation(); undoPayment(${payment.id})">Deshacer</button>
-            </div>
-        `;
-
-        ejecucionListEl.appendChild(li);
     });
 }
 
-window.toggleSelection = function(id) {
-    if (selectedIds.includes(id)) {
-        selectedIds = selectedIds.filter(selectedId => selectedId !== id);
-    } else {
-        selectedIds.push(id);
-    }
-    renderEjecucion();
-}
-
-window.bulkExecute = function() {
-    addExecutedPayments(selectedIds);
-    selectedIds = [];
-    renderEjecucion();
-}
-
-window.cancelSelection = function() {
-    selectedIds = [];
-    renderEjecucion();
-}
-
-window.executePayment = function(id) {
-    addExecutedPayment(id);
-    renderEjecucion();
-}
-
-window.undoPayment = function(id) {
-    removeExecutedPayment(id);
-    renderEjecucion();
-}
-
-window.applyIncome = function(id) {
-    addAppliedIncome(id);
-    renderEjecucion();
-}
-
-window.unapplyIncome = function(id) {
-    removeAppliedIncome(id);
-    renderEjecucion();
-}
+// Clear any transient selection when arriving at the tab.
+export function resetEjecucionSelection() { selectedIds = []; }
