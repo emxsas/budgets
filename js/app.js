@@ -1,57 +1,63 @@
-import { setupUI } from './ui.js';
 import { initState } from './storage.js';
-import { initIngresos } from './ingresos.js';
-import { initGastos } from './gastos.js';
-import { initGastosRecurrentes } from './gastosRecurrentes.js';
-import { initDeuda } from './deuda.js';
-import { initSettings } from './settings.js';
-import { initResumen } from './resumen.js';
-import { initEjecucion } from './ejecucion.js';
+import { setupUI } from './ui.js';
+import { renderResumen } from './resumen.js';
+import { renderMovimientos, initMovimientos } from './movimientos.js';
+import { renderDeuda, initDeuda } from './deuda.js';
+import { renderEjecucion, initEjecucion, resetEjecucionSelection } from './ejecucion.js';
+import { renderAjustes, initAjustes } from './settings.js';
+import { initSheet, openPicker } from './sheet.js';
+
+const TABS = {
+    resumen: { title: 'Resumen', render: renderResumen },
+    movimientos: { title: 'Movimientos', render: renderMovimientos },
+    deuda: { title: 'Deuda', render: renderDeuda },
+    ejecucion: { title: 'Ejecución', render: renderEjecucion },
+    ajustes: { title: 'Ajustes', render: renderAjustes }
+};
+
+let currentTab = 'resumen';
+
+function setTab(tab) {
+    if (!TABS[tab]) return;
+    currentTab = tab;
+
+    document.querySelectorAll('.tab-section').forEach(sec => {
+        sec.hidden = sec.id !== `${tab}-section`;
+    });
+    document.querySelectorAll('.side-btn, .tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    document.getElementById('screen-title').textContent = TABS[tab].title;
+
+    if (tab === 'ejecucion') resetEjecucionSelection();
+    TABS[tab].render();
+
+    window.scrollTo(0, 0);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("App Loaded");
-    initState(); // Initialize storage on app start
+    initState();
     setupUI();
-    initIngresos(); // Initialize Ingresos tab functionality
-    initGastos(); // Initialize Gastos tab functionality
-    initGastosRecurrentes(); // Initialize Gastos Recurrentes tab functionality
-    initDeuda(); // Initialize Deuda tab functionality
-    initSettings(); // Initialize Settings tab functionality
-    initEjecucion(); // Initialize Ejecucion tab functionality
-    initResumen(); // Initialize Resumen tab functionality on load
 
-    const menuButton = document.getElementById('menu-button');
-    const menuDropdown = document.getElementById('menu-dropdown');
-    const tabs = document.querySelectorAll('.tab-button');
-    const contents = document.querySelectorAll('.tab-content');
+    // Attach one-time event delegation for each section + the shared sheet.
+    initMovimientos();
+    initDeuda();
+    initEjecucion();
+    initAjustes();
+    initSheet();
 
-    menuButton.addEventListener('click', () => {
-        menuDropdown.classList.toggle('active');
+    // Navigation (sidebar, bottom bar, header gear all use [data-tab]).
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => setTab(btn.dataset.tab));
     });
 
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Hide all content
-            contents.forEach(c => {
-                c.classList.add('hidden');
-            });
-
-            // Show selected content
-            const contentId = `${tab.dataset.tab}-content`;
-            document.getElementById(contentId).classList.remove('hidden');
-
-            // Update menu button text
-            menuButton.textContent = tab.textContent;
-
-            // Hide dropdown
-            menuDropdown.classList.remove('active');
-
-            // Special action for resumen tab to ensure chart renders correctly
-            if (tab.dataset.tab === 'resumen') {
-                initResumen();
-            } else if (tab.dataset.tab === 'ejecucion') {
-                initEjecucion();
-            }
-        });
+    // Add (+) buttons open the type picker sheet.
+    document.querySelectorAll('[data-add="open"]').forEach(btn => {
+        btn.addEventListener('click', () => openPicker());
     });
+
+    // Re-render the active section whenever persisted data changes.
+    document.addEventListener('data-changed', () => TABS[currentTab].render());
+
+    setTab('resumen');
 });

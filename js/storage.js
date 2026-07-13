@@ -75,6 +75,46 @@ export function saveState(state) {
     localStorage.setItem(APP_STATE_KEY, JSON.stringify(state));
 }
 
+/**
+ * Restores the application to its default state (clears entries, keeps default
+ * categories). Writes a deep clone so the shared defaultState is never mutated.
+ */
+export function resetState() {
+    localStorage.setItem(APP_STATE_KEY, JSON.stringify(JSON.parse(JSON.stringify(defaultState))));
+}
+
+/**
+ * Upsert for the unified "Gasto" concept. Array membership is the extra flag:
+ * `gastos` holds extras, `gastosRecurrentes` holds recurrentes. Removes the id
+ * from both arrays first, so this also handles moving a gasto between the two
+ * when its "Extra" checkbox is toggled while editing (the id is preserved).
+ * @param {{id?:number, extra:boolean, categoria:string, descripcion:string, cantidad:number}} gasto
+ */
+export function saveGasto(gasto) {
+    const state = getState();
+    const id = gasto.id != null ? gasto.id : Date.now();
+    state.gastos = state.gastos.filter(g => g.id !== id);
+    state.gastosRecurrentes = state.gastosRecurrentes.filter(g => g.id !== id);
+    const obj = { id, categoria: gasto.categoria, descripcion: gasto.descripcion, cantidad: gasto.cantidad };
+    if (gasto.extra) state.gastos.push(obj);
+    else state.gastosRecurrentes.push(obj);
+    saveState(state);
+}
+
+/**
+ * Closes the month: removes all extra gastos and all ephemeral ingresos, and
+ * clears the entire execution progress so the new month starts from zero.
+ * Recurring gastos, debts and non-ephemeral incomes survive.
+ */
+export function resetMonth() {
+    const state = getState();
+    state.gastos = [];
+    state.ingresos = state.ingresos.filter(i => !i.efimero);
+    state.executedPayments = [];
+    state.appliedIncomes = [];
+    saveState(state);
+}
+
 // --- Data modification functions ---
 
 // --- Ingresos Functions ---
