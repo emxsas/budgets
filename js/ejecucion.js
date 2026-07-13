@@ -2,7 +2,7 @@
 // to the existing storage.js primitives (applied incomes + executed payments +
 // bulk execute); only the presentation is reworked to the new design.
 import {
-    getIngresos, getGastos, getGastosRecurrentes, getDeudas,
+    getIngresos, getGastos, getGastosRecurrentes, getDeudas, getPresupuestos,
     getExecutedPayments, addExecutedPayments, removeExecutedPayment,
     getAppliedIncomes, addAppliedIncome, removeAppliedIncome
 } from './storage.js';
@@ -14,7 +14,11 @@ function allPayments() {
     return [
         ...getGastos().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Gasto extra', color: '#f43f5e' })),
         ...getGastosRecurrentes().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Recurrente', color: '#22d3ee' })),
-        ...getDeudas().map(d => ({ id: d.id, desc: d.descripcion, amount: parseFloat(d.pagoMensual) || 0, source: d.tipo, sourceType: 'Deuda', color: '#f97316' }))
+        ...getDeudas().map(d => ({ id: d.id, desc: d.descripcion, amount: parseFloat(d.pagoMensual) || 0, source: d.tipo, sourceType: 'Deuda', color: '#f97316' })),
+        // Presupuestos count what has actually been spent (sum of line-items); shown only when > 0.
+        ...getPresupuestos()
+            .map(p => ({ id: p.id, desc: p.nombre, amount: sum(p.items || [], it => it.cantidad), source: 'Presupuesto', sourceType: 'Presupuesto', color: '#a78bfa' }))
+            .filter(p => p.amount > 0)
     ];
 }
 
