@@ -3,12 +3,15 @@
 // bulk execute); only the presentation is reworked to the new design.
 import {
     getIngresos, getGastos, getGastosRecurrentes, getDeudas, getPresupuestos,
+    getIngresoCategories, getGastoCategories, getDeudaCategories,
     getExecutedPayments, addExecutedPayments, removeExecutedPayment,
     getAppliedIncomes, addAppliedIncome, removeAppliedIncome
 } from './storage.js';
 import { fmt, fmt0, sum, esc, icon } from './ui.js';
 
 let selectedIds = [];
+// Current "Proyectar categoría" choice (transient, like the selection).
+let projection = '';
 
 function allPayments() {
     return [
@@ -20,6 +23,116 @@ function allPayments() {
             .map(p => ({ id: p.id, desc: p.nombre, amount: sum(p.items || [], it => it.cantidad), source: 'Presupuesto', sourceType: 'Presupuesto', color: '#a78bfa' }))
             .filter(p => p.amount > 0)
     ];
+}
+
+// Union of the configured categories and any still used by an entry (an item
+// may keep a category that was later deleted in Ajustes).
+function catsWithUsed(configured, used) {
+    const out = [...configured];
+    used.forEach(c => { if (c && !out.includes(c)) out.push(c); });
+    return out;
+}
+
+// Options for the "Proyectar categoría" picker: whole groups first, then each
+// individual category. Value format: "<kind>:<category>" or "all:<group>".
+function projectionOptions() {
+    const gastoCats = catsWithUsed(getGastoCategories(), [...getGastos(), ...getGastosRecurrentes()].map(g => g.categoria));
+    const deudaCats = catsWithUsed(getDeudaCategories(), getDeudas().map(d => d.tipo));
+    const ingresoCats = catsWithUsed(getIngresoCategories(), getIngresos().map(i => i.categoria));
+    return [
+        { label: 'Grupos', opts: [
+            ['all:pagos', 'Todos los pagos'],
+            ['all:gastos', 'Todos los gastos (fijos + extra)'],
+            ['all:rec', 'Gastos fijos (recurrentes)'],
+            ['all:extra', 'Gastos efímeros (extra)'],
+            ['all:deuda', 'Toda la deuda'],
+            ['all:presupuestos', 'Presupuestos'],
+            ['all:ingresos', 'Todos los ingresos']
+        ] },
+        { label: 'Gastos', opts: gastoCats.map(c => ['gasto:' + c, c]) },
+        { label: 'Deuda', opts: deudaCats.map(c => ['deuda:' + c, c]) },
+        { label: 'Ingresos', opts: ingresoCats.map(c => ['ingreso:' + c, c]) }
+    ].filter(g => g.opts.length);
+}
+
+// Resolve a projection key to its matching entries. Payments use the same
+// shape as allPayments(); incomes are flagged so the card labels change.
+function projectionItems(key, payments) {
+    const i = key.indexOf(':');
+    const kind = key.slice(0, i), val = key.slice(i + 1);
+    if (kind === 'ingreso' || key === 'all:ingresos') {
+        const items = getIngresos()
+            .filter(x => key === 'all:ingresos' || x.categoria === val)
+            .map(x => ({ id: x.id, desc: x.descripcion, amount: parseFloat(x.cantidad) || 0, source: x.categoria }));
+        return { income: true, items };
+    }
+    const isGasto = p => p.sourceType === 'Gasto extra' || p.sourceType === 'Recurrente';
+    const match = {
+        'all:pagos': () => true,
+        'all:gastos': isGasto,
+        'all:rec': p => p.sourceType === 'Recurrente',
+        'all:extra': p => p.sourceType === 'Gasto extra',
+        'all:deuda': p => p.sourceType === 'Deuda',
+        'all:presupuestos': p => p.sourceType === 'Presupuesto'
+    }[key] || (kind === 'gasto' ? p => isGasto(p) && p.source === val
+        : kind === 'deuda' ? p => p.sourceType === 'Deuda' && p.source === val
+        : () => false);
+    return { income: false, items: payments.filter(match) };
+}
+
+function projectionCard(payments, executed, applied) {
+    const groups = projectionOptions();
+    const valid = groups.some(g => g.opts.some(([v]) => v === projection));
+    if (!valid) projection = '';
+
+    const options = `<option value=""${projection ? '' : ' selected'}>Elige una categoría o grupo…</option>` +
+        groups.map(g => `<optgroup label="${esc(g.label)}">${g.opts.map(([v, l]) =>
+            `<option value="${esc(v)}"${v === projection ? ' selected' : ''}>${esc(l)}</option>`).join('')}</optgroup>`).join('');
+
+    let result = '';
+    if (projection) {
+        const { income, items } = projectionItems(projection, payments);
+        const done = income ? applied : executed;
+        const total = sum(items, x => x.amount);
+        const pendItems = items.filter(x => !done.includes(x.id));
+        const pend = sum(pendItems, x => x.amount);
+        const accent = income ? '#34d399' : '#fff';
+        const rows = items.length
+            ? items.map(x => {
+                const d = done.includes(x.id);
+                return `<div style="display:flex;align-items:center;gap:10px;padding:7px 2px;border-top:1px solid #21282c">
+                    <div style="flex:1;min-width:0;font-size:12.5px;font-weight:600;${d ? 'text-decoration:line-through;color:#7c8a92' : ''}">${esc(x.desc)}<span style="font-size:10.5px;color:#7c8a92;font-weight:600"> · ${esc(x.source)}</span></div>
+                    <span class="num" style="font-size:12.5px;font-weight:700;color:${d ? '#7c8a92' : '#c3cdd2'}">${fmt0(x.amount)}</span>
+                </div>`;
+            }).join('')
+            : `<div style="font-size:12px;color:#5f6d73;padding:6px 2px">No hay movimientos en esta categoría.</div>`;
+        const unselected = income ? [] : pendItems.filter(x => !selectedIds.includes(x.id));
+        const selectBtn = unselected.length
+            ? `<button data-action="select-projection" style="width:100%;margin-top:10px;background:#1c3a2e;border:1px solid #2a5544;color:#34d399;font-weight:700;padding:10px;border-radius:11px;cursor:pointer">Seleccionar pendientes (${unselected.length})</button>`
+            : '';
+        result = `<div style="text-align:center;margin-top:14px">
+                <div class="num" style="font-size:34px;font-weight:700;letter-spacing:-1px;color:${accent}">${fmt(total)}</div>
+                <div style="font-size:11.5px;color:#7c8a92;font-weight:600">${items.length} ${items.length === 1 ? 'movimiento' : 'movimientos'}</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+                <div style="flex:1;background:#161a1d;border:1px solid #21282c;border-radius:11px;padding:8px 10px">
+                    <div style="font-size:10.5px;color:#7c8a92;font-weight:700">${income ? 'Por aplicar' : 'Pendiente'}</div>
+                    <div class="num" style="font-size:15px;font-weight:700;color:#fbbf24">${fmt0(pend)}</div>
+                </div>
+                <div style="flex:1;background:#161a1d;border:1px solid #21282c;border-radius:11px;padding:8px 10px">
+                    <div style="font-size:10.5px;color:#7c8a92;font-weight:700">${income ? 'Aplicado' : 'Ejecutado'}</div>
+                    <div class="num" style="font-size:15px;font-weight:700;color:#34d399">${fmt0(total - pend)}</div>
+                </div>
+            </div>
+            ${selectBtn}
+            <div style="margin-top:10px">${rows}</div>`;
+    }
+
+    return `<div class="card" style="border-radius:20px">
+        <div style="font-size:13.5px;font-weight:700;margin:0 2px 10px;color:#c3cdd2">Proyectar categoría</div>
+        <select id="ej-projection" class="field">${options}</select>
+        ${result}
+    </div>`;
 }
 
 export function renderEjecucion() {
@@ -88,6 +201,7 @@ export function renderEjecucion() {
             <div class="num" style="font-size:44px;font-weight:700;letter-spacing:-1.5px;margin-top:2px;color:${restante >= 0 ? '#34d399' : '#f43f5e'}">${fmt(restante)}</div>
             <div style="font-size:11.5px;color:#7c8a92;font-weight:600">Ingresos aplicados − pagos ejecutados</div>
         </div>
+        ${projectionCard(payments, executed, applied)}
         <div>
             <div style="font-size:13.5px;font-weight:700;margin:0 2px 10px;color:#c3cdd2">Ingresos a aplicar</div>
             <div style="display:flex;flex-direction:column;gap:8px">${incomeRows}</div>
@@ -102,6 +216,11 @@ export function renderEjecucion() {
 
 export function initEjecucion() {
     const el = document.getElementById('ejecucion-section');
+    el.addEventListener('change', (e) => {
+        if (e.target.id !== 'ej-projection') return;
+        projection = e.target.value;
+        renderEjecucion();
+    });
     el.addEventListener('click', (e) => {
         const bulk = e.target.closest('[data-bulk]');
         if (bulk) {
@@ -122,6 +241,13 @@ export function initEjecucion() {
             }
             case 'tap-payment': {
                 selectedIds = selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : selectedIds.concat(id);
+                renderEjecucion();
+                break;
+            }
+            case 'select-projection': {
+                const executed = getExecutedPayments();
+                const { items } = projectionItems(projection, allPayments());
+                items.forEach(p => { if (!executed.includes(p.id) && !selectedIds.includes(p.id)) selectedIds.push(p.id); });
                 renderEjecucion();
                 break;
             }
