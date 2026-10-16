@@ -60,6 +60,8 @@ input:focus, select:focus { outline: none; border-color: var(--mint) !important;
   background: linear-gradient(135deg, var(--mint), var(--cyan));
   color: #06231a; font-weight: 700; font-size: 15px; cursor: pointer;
 }
+.hscroll { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.hscroll::-webkit-scrollbar { display: none; }
 .bar-track { height: 7px; border-radius: 99px; background: #242b30; overflow: hidden; }
 
 /* ===== Desktop sidebar ===== */
@@ -156,4 +158,5 @@ input:focus, select:focus { outline: none; border-color: var(--mint) !important;
   .main { padding-bottom: 24px; }
   .content { max-width: 760px; padding: 24px 36px 56px; }
   .topbar-gear { display: none; }
+  .chip-row { flex-wrap: wrap; row-gap: 7px; }
 }
