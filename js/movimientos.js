@@ -1,6 +1,6 @@
 // Consolidated "Movimientos" view: two segments (Ingresos / Gastos). Gastos
 // merges the two storage arrays (extra vs recurrente) into one colour-coded
-// list; ingresos flag ephemeral entries in grass green. Edit opens the shared
+// list; ingresos flag extra (one-off) entries in grass green. Edit opens the shared
 // sheet; data comes from the existing storage.js getters/deleters.
 import {
     getIngresos, getGastos, getGastosRecurrentes,
@@ -18,7 +18,7 @@ function ingresoItems() {
         const ef = !!i.efimero;
         return {
             id: i.id, type: 'ingreso', descripcion: i.descripcion, categoria: i.categoria, cantidad: i.cantidad,
-            color: ef ? GRASS : MINT, iconBg: ef ? '#22300a' : '#12291f', tag: ef ? 'Efímero' : null
+            color: ef ? GRASS : MINT, iconBg: ef ? '#22300a' : '#12291f', tag: ef ? 'Extra' : null
         };
     });
 }

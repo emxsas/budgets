@@ -48,7 +48,7 @@ export function openEdit(type, id) {
     if (!item) return;
     let form;
     if (type === 'deuda') {
-        form = { tipo: item.tipo, descripcion: item.descripcion, pagoMensual: item.pagoMensual, total: item.total, original: item.original != null ? item.original : item.total };
+        form = { tipo: item.tipo, descripcion: item.descripcion, pagoMensual: item.pagoMensual, total: item.total, original: item.original != null ? item.original : item.total, modo: item.modo === 'auto' ? 'auto' : 'manual' };
     } else if (type === 'gasto') {
         form = { cat: item.categoria, descripcion: item.descripcion, cantidad: item.cantidad, extra: getGastos().some(x => x.id === id) };
     } else if (type === 'presupuesto') {
@@ -88,6 +88,18 @@ function pickerMarkup() {
     </div>`;
 }
 
+// Two-option card picker for the debt mode; the checked option is styled via :has().
+function modoPicker(val) {
+    const opt = (v, title, desc) => `<label class="modo-opt" style="flex:1;display:flex;flex-direction:column;gap:3px;padding:10px 11px;border-radius:12px;background:#0e1113;border:1px solid #2a3237;cursor:pointer">
+            <span style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#fff"><input type="radio" name="sh-modo" value="${v}"${val === v ? ' checked' : ''} style="margin:0;accent-color:#f97316">${title}</span>
+            <span style="font-size:11px;font-weight:600;color:#7c8a92;line-height:1.35">${desc}</span>
+        </label>`;
+    return `<div style="display:flex;gap:8px">
+        ${opt('manual', 'Manual', 'Tú actualizas el restante (con intereses, etc.)')}
+        ${opt('auto', 'Automático', 'Cada pago ejecutado baja el restante (MSI, préstamos sin intereses)')}
+    </div>`;
+}
+
 function field(label, inner, hint) {
     return `<div><label class="field-label">${label}${hint ? ` <span style="color:#5f6d73;font-weight:600">${hint}</span>` : ''}</label>${inner}</div>`;
 }
@@ -98,11 +110,12 @@ function formMarkup() {
     if (t === 'deuda') {
         body = `${field('Tipo', `<select id="sh-cat" class="field">${optionsFor('deuda', f.tipo)}</select>`)}
             ${field('Descripción', textInput('sh-descripcion', f.descripcion, cfg.placeholder))}
-            <div style="display:flex;gap:10px">
+            <div data-tour="sh-deuda-montos" style="display:flex;gap:10px">
                 <div style="flex:1">${field('Pago mensual', numInput('sh-pagoMensual', f.pagoMensual, '2500'))}</div>
                 <div style="flex:1">${field('Restante', numInput('sh-total', f.total, '18400'))}</div>
             </div>
-            ${field('Monto original', numInput('sh-original', f.original, '30000'), '(para progreso)')}`;
+            ${field('Monto original', numInput('sh-original', f.original, '30000'), '(para progreso)')}
+            <div data-tour="sh-deuda-modo">${field('Modo', modoPicker(f.modo === 'auto' ? 'auto' : 'manual'))}</div>`;
     } else if (t === 'presupuesto') {
         body = `${field('Nombre', textInput('sh-nombre', f.nombre, cfg.placeholder))}
             ${field('Límite', numInput('sh-limite', f.limite, '4000'))}
@@ -112,7 +125,7 @@ function formMarkup() {
             ${field('Cantidad', numInput('sh-cantidad', f.cantidad, '450'))}`;
     } else {
         const checkbox = t === 'ingreso'
-            ? checkboxRow('sh-efimero', 'Efímero (se borra al cerrar el mes)', !!f.efimero)
+            ? checkboxRow('sh-efimero', 'Extra (se borra al cerrar el mes)', !!f.efimero)
             : checkboxRow('sh-extra', 'Extra (se borra al cerrar el mes)', !!f.extra);
         body = `${field('Categoría', `<select id="sh-cat" class="field">${optionsFor(t, f.cat)}</select>`)}
             ${field('Descripción', textInput('sh-descripcion', f.descripcion, cfg.placeholder))}
@@ -128,7 +141,8 @@ function formMarkup() {
 function render() {
     if (!state.open) { root.innerHTML = ''; return; }
     const t = state.type;
-    const title = t ? `${state.editId ? 'Editar ' : 'Nuevo '}${TYPES[t].title.toLowerCase()}` : 'Añadir';
+    const nuevo = t === 'deuda' ? 'Nueva ' : 'Nuevo ';
+    const title = t ? `${state.editId ? 'Editar ' : nuevo}${TYPES[t].title.toLowerCase()}` : 'Añadir';
     root.innerHTML = `
         <div class="sheet-overlay" data-sheet="overlay">
             <div class="sheet-panel">
@@ -152,7 +166,8 @@ function save() {
         const total = document.getElementById('sh-total').value;
         const original = document.getElementById('sh-original').value;
         if (!descripcion || !pagoMensual || !total) { alert('Completa descripción, pago mensual y restante.'); return; }
-        const obj = { tipo, descripcion, pagoMensual: parseFloat(pagoMensual) || 0, total: parseFloat(total) || 0, original: parseFloat(original) || parseFloat(total) || 0 };
+        const modo = (document.querySelector('input[name="sh-modo"]:checked') || {}).value === 'auto' ? 'auto' : 'manual';
+        const obj = { tipo, descripcion, pagoMensual: parseFloat(pagoMensual) || 0, total: parseFloat(total) || 0, original: parseFloat(original) || parseFloat(total) || 0, modo };
         if (state.editId) updateDeuda({ id: state.editId, ...obj });
         else addDeuda(obj);
     } else if (t === 'presupuesto') {

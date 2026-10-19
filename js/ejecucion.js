@@ -3,7 +3,7 @@
 // bulk execute); only the presentation is reworked to the new design.
 import {
     getIngresos, getGastos, getGastosRecurrentes, getDeudas, getPresupuestos,
-    getIngresoCategories, getGastoCategories, getDeudaCategories,
+    getIngresoCategories, getGastoCategories, getDeudaCategories, pagoDelMes, getState,
     getExecutedPayments, addExecutedPayments, removeExecutedPayment,
     getAppliedIncomes, addAppliedIncome, removeAppliedIncome
 } from './storage.js';
@@ -19,7 +19,13 @@ function allPayments() {
     return [
         ...getGastos().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Gasto extra', color: '#f43f5e' })),
         ...getGastosRecurrentes().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Recurrente', color: '#22d3ee' })),
-        ...getDeudas().map(d => ({ id: d.id, desc: d.descripcion, amount: parseFloat(d.pagoMensual) || 0, source: d.tipo, sourceType: 'Deuda', color: '#f97316' })),
+        // Auto debts pay min(pago, restante); once paid off they drop out (unless executed this month).
+        ...(() => {
+            const { deudaAbonos, executedPayments } = getState();
+            return getDeudas()
+                .map(d => ({ id: d.id, desc: d.descripcion, amount: pagoDelMes(d, deudaAbonos), source: d.tipo, sourceType: 'Deuda', color: '#f97316', auto: d.modo === 'auto' }))
+                .filter(p => !p.auto || p.amount > 0 || executedPayments.includes(p.id));
+        })(),
         // Presupuestos count what has actually been spent (sum of line-items); shown only when > 0.
         ...getPresupuestos()
             .map(p => ({ id: p.id, desc: p.nombre, amount: sum(p.items || [], it => it.cantidad), source: 'Presupuesto', sourceType: 'Presupuesto', color: '#a78bfa' }))
@@ -41,7 +47,7 @@ const PROJ_GROUPS = [
     ['all:pagos', 'Todos los pagos', 'Todos los pagos', 'conic-gradient(#22d3ee 0 25%,#f43f5e 0 50%,#f97316 0 75%,#a78bfa 0)'],
     ['all:gastos', 'Gastos', 'Todos los gastos (fijos + extra)', 'linear-gradient(135deg,#22d3ee 50%,#f43f5e 50%)'],
     ['all:rec', 'Fijos', 'Gastos fijos (recurrentes)', '#22d3ee'],
-    ['all:extra', 'Extra', 'Gastos efímeros (extra)', '#f43f5e'],
+    ['all:extra', 'Extra', 'Gastos extra', '#f43f5e'],
     ['all:deuda', 'Deuda', 'Toda la deuda', '#f97316'],
     ['all:presupuestos', 'Presupuestos', 'Presupuestos', '#a78bfa'],
     ['all:ingresos', 'Ingresos', 'Todos los ingresos', '#34d399']
@@ -199,7 +205,7 @@ function projectionCard(payments, executed, applied) {
             <div style="margin-top:10px">${rows}${more}</div>`;
     }
 
-    return `<div class="card" style="border-radius:20px">${head}${chipRow}${picker}${result}</div>`;
+    return `<div class="card" data-tour="ej-proj" style="border-radius:20px">${head}${chipRow}${picker}${result}</div>`;
 }
 
 export function renderEjecucion() {
@@ -264,17 +270,17 @@ export function renderEjecucion() {
 
     const chipScroll = document.getElementById('ej-proj-chips')?.scrollLeft || 0;
     el.innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">
-        <div class="card" style="border-radius:20px;padding:20px;text-align:center">
+        <div class="card" data-tour="ej-restante" style="border-radius:20px;padding:20px;text-align:center">
             <div style="font-size:12.5px;font-weight:600;color:#7c8a92">Monto restante por aplicar</div>
             <div class="num" style="font-size:44px;font-weight:700;letter-spacing:-1.5px;margin-top:2px;color:${restante >= 0 ? '#34d399' : '#f43f5e'}">${fmt(restante)}</div>
             <div style="font-size:11.5px;color:#7c8a92;font-weight:600">Ingresos aplicados − pagos ejecutados</div>
         </div>
         ${projectionCard(payments, executed, applied)}
-        <div>
+        <div data-tour="ej-ingresos">
             <div style="font-size:13.5px;font-weight:700;margin:0 2px 10px;color:#c3cdd2">Ingresos a aplicar</div>
             <div style="display:flex;flex-direction:column;gap:8px">${incomeRows}</div>
         </div>
-        <div>
+        <div data-tour="ej-pagos">
             <div style="font-size:13.5px;font-weight:700;margin:0 2px 10px;color:#c3cdd2">Pagos a realizar <span style="color:#7c8a92;font-weight:600;font-size:12px">· toca para seleccionar</span></div>
             ${bulk}
             <div style="display:flex;flex-direction:column;gap:8px">${paymentRows}</div>

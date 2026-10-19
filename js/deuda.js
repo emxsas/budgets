@@ -1,7 +1,7 @@
 // Deuda (debt) view: total-pending hero plus per-debt cards with a paid-off
 // progress bar. Progress uses the optional `original` field with a safe
 // fallback so pre-existing debts (no `original`) simply show 0% paid.
-import { getDeudas, deleteDeuda } from './storage.js';
+import { getDeudas, deleteDeuda, pagoDelMes } from './storage.js';
 import { fmt0, sum, esc, icon } from './ui.js';
 import { openAdd, openEdit } from './sheet.js';
 
@@ -19,7 +19,7 @@ export function renderDeuda() {
 
     const deudas = getDeudas();
     const deudaTotal = sum(deudas, x => x.total);
-    const deudaMes = sum(deudas, x => x.pagoMensual);
+    const deudaMes = sum(deudas, x => pagoDelMes(x));
     const deudaOrig = sum(deudas, x => (parseFloat(x.original) || parseFloat(x.total) || 0));
     const paidPct = deudaOrig ? Math.round((deudaOrig - deudaTotal) / deudaOrig * 100) : 0;
 
@@ -30,7 +30,13 @@ export function renderDeuda() {
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px">
                     <div style="min-width:0">
                         <div style="font-size:15px;font-weight:700">${esc(d.descripcion)}</div>
-                        <div style="display:inline-block;font-size:10px;font-weight:700;color:#f9a35b;background:#2a1e12;padding:2px 8px;border-radius:99px;margin-top:5px">${esc(d.tipo)}</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">
+                            <span style="font-size:10px;font-weight:700;color:#f9a35b;background:#2a1e12;padding:2px 8px;border-radius:99px">${esc(d.tipo)}</span>
+                            ${d.modo === 'auto'
+                                ? `<span style="font-size:10px;font-weight:700;color:#22d3ee;background:#122229;padding:2px 8px;border-radius:99px">Automático</span>`
+                                : `<span style="font-size:10px;font-weight:700;color:#9aa7ad;background:#1c2226;padding:2px 8px;border-radius:99px">Manual</span>`}
+                            ${d.modo === 'auto' && p.total <= 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:#12291f;padding:2px 8px;border-radius:99px">Liquidada</span>` : ''}
+                        </div>
                     </div>
                     <div style="display:flex;gap:4px;flex:none">
                         <button data-action="edit" data-id="${d.id}" style="width:30px;height:30px;border-radius:9px;background:#1c2226;border:1px solid #2a3237;color:#9aa7ad;cursor:pointer;display:flex;align-items:center;justify-content:center">${icon('edit', { size: 14, sw: 2 })}</button>
@@ -39,7 +45,7 @@ export function renderDeuda() {
                 </div>
                 <div style="display:flex;justify-content:space-between;font-size:11px;color:#7c8a92;font-weight:600;margin-bottom:7px">
                     <span>Restante <b class="num" style="color:#fff;font-size:13px">${fmt0(p.total)}</b></span>
-                    <span>Mensual <b class="num" style="color:#f97316;font-size:13px">${fmt0(d.pagoMensual)}</b></span>
+                    <span>Mensual <b class="num" style="color:#f97316;font-size:13px">${fmt0(pagoDelMes(d))}</b></span>
                 </div>
                 <div style="display:flex;align-items:center;gap:9px">
                     <div style="flex:1" class="bar-track"><div style="width:${p.pct}%;height:100%;border-radius:99px;background:linear-gradient(90deg,#34d399,#22d3ee)"></div></div>
@@ -50,7 +56,7 @@ export function renderDeuda() {
         : `<div style="text-align:center;padding:40px 20px;color:#5f6d73;font-size:13px">Sin deudas registradas.</div>`;
 
     el.innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">
-        <div style="background:linear-gradient(135deg,#2a1518,#161a1d);border:1px solid #3a1e22;border-radius:20px;padding:20px">
+        <div data-tour="deuda-total" style="background:linear-gradient(135deg,#2a1518,#161a1d);border:1px solid #3a1e22;border-radius:20px;padding:20px">
             <div style="font-size:12.5px;font-weight:600;color:#f9a3aa">Deuda total pendiente</div>
             <div class="num" style="font-size:40px;font-weight:700;letter-spacing:-1.5px;color:#f43f5e;margin-top:2px">${fmt0(deudaTotal)}</div>
             <div style="display:flex;gap:20px;margin-top:6px">

@@ -1,7 +1,7 @@
 // Resumen (summary) view: available-this-month hero, category donut
 // (conic-gradient, no chart library), income-vs-expense bars, savings rate and
 // a pending-debt preview. Reads exclusively from storage.js getters.
-import { getIngresos, getGastos, getGastosRecurrentes, getDeudas, getPresupuestos } from './storage.js';
+import { getIngresos, getGastos, getGastosRecurrentes, getDeudas, getPresupuestos, pagoDelMes } from './storage.js';
 import { fmt, fmt0, sum, esc, icon } from './ui.js';
 
 // Deuda is always red and the folded "Otros" slice is always grey; every other
@@ -28,7 +28,7 @@ export function renderResumen() {
     const totIng = sum(ingresos, x => x.cantidad);
     const totRec = sum(rec, x => x.cantidad);
     const totExt = sum(ext, x => x.cantidad);
-    const totDeudaMes = sum(deudas, x => x.pagoMensual);
+    const totDeudaMes = sum(deudas, x => pagoDelMes(x));
     // Presupuestos count their full limit (the envelope) toward Resumen totals.
     const totPresupLimite = sum(presupuestos, p => p.limite);
     const totPresupGastado = presupuestos.reduce((acc, p) => acc + sum(p.items || [], it => it.cantidad), 0);
@@ -95,7 +95,7 @@ export function renderResumen() {
                     </div>
                     <div style="text-align:right;flex:none">
                         <div class="num" style="font-size:15px;font-weight:700">${fmt0(p.total)}</div>
-                        <div class="num" style="font-size:10.5px;color:#7c8a92;font-weight:600">${fmt0(d.pagoMensual)}/mes</div>
+                        <div class="num" style="font-size:10.5px;color:#7c8a92;font-weight:600">${fmt0(pagoDelMes(d))}/mes</div>
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:9px">
@@ -113,7 +113,7 @@ export function renderResumen() {
         ? `<span class="num">Gastado ${fmt0(totPresupGastado)} de ${fmt0(totPresupLimite)}</span>`
         : 'Crea tu primer presupuesto';
     const presupCard = `
-        <div data-tab="presupuestos" style="background:#161a1d;border:1px solid #21282c;border-radius:18px;padding:15px 16px;cursor:pointer">
+        <div data-tab="presupuestos" data-tour="res-presup" style="background:#161a1d;border:1px solid #21282c;border-radius:18px;padding:15px 16px;cursor:pointer">
             <div style="display:flex;align-items:center;gap:12px">
                 <span style="width:36px;height:36px;border-radius:11px;background:#1e1a2e;color:#a78bfa;display:flex;align-items:center;justify-content:center;flex:none">${icon('presupuestos', { size: 19, sw: 1.9 })}</span>
                 <div style="flex:1;min-width:0">
@@ -125,7 +125,7 @@ export function renderResumen() {
         </div>`;
 
     el.innerHTML = `<div style="display:flex;flex-direction:column;gap:18px">
-        <div>
+        <div data-tour="res-disp">
             <div class="num" style="font-size:13px;font-weight:600;color:#7c8a92">Disponible este mes</div>
             <div class="num" style="font-size:52px;font-weight:700;letter-spacing:-2.5px;line-height:1.05;margin-top:2px;color:${dispColor}">${fmt(disp)}</div>
             <div style="display:flex;gap:18px;margin-top:4px">
@@ -134,7 +134,7 @@ export function renderResumen() {
             </div>
         </div>
 
-        <div class="card" style="padding:16px 18px">
+        <div class="card" data-tour="res-bar" style="padding:16px 18px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
                 <span style="font-size:13.5px;font-weight:700">Ingresos vs Gastos</span>
                 <span class="num" style="font-size:12px;font-weight:700;color:${dispColor}">${savingsRate}% ahorro</span>
@@ -151,7 +151,7 @@ export function renderResumen() {
             </div>
         </div>
 
-        <div class="card" style="border-radius:22px;padding:20px">
+        <div class="card" data-tour="res-donut" style="border-radius:22px;padding:20px">
             <div style="display:flex;align-items:center;gap:20px">
                 <div style="width:104px;height:104px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:${donut}">
                     <div style="width:66px;height:66px;border-radius:50%;background:#161a1d;display:flex;flex-direction:column;align-items:center;justify-content:center">
@@ -165,7 +165,7 @@ export function renderResumen() {
 
         ${presupCard}
 
-        <div>
+        <div data-tour="res-deuda">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 12px">
                 <span style="font-size:15px;font-weight:700">Deuda pendiente</span>
                 <span class="num" style="font-size:14px;font-weight:700;color:#f43f5e">${fmt0(deudaTotal)}</span>

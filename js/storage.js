@@ -8,6 +8,9 @@ const defaultState = {
     presupuestos: [],
     executedPayments: [],
     appliedIncomes: [],
+    // Amount subtracted this month from each "auto" debt's restante when its
+    // payment was executed ({ [deudaId]: amount }); lets Deshacer restore it.
+    deudaAbonos: {},
     categories: {
         ingresos: ["Salario", "Ventas", "Regalo", "Otros"],
         gastos: ["Comida", "Transporte", "Vivienda", "Ocio", "Facturas", "Otros"],
@@ -67,6 +70,9 @@ export function getState() {
     if (!finalState.presupuestos) {
         finalState.presupuestos = [];
     }
+    if (!finalState.deudaAbonos || typeof finalState.deudaAbonos !== 'object') {
+        finalState.deudaAbonos = {};
+    }
 
     return finalState;
 }
@@ -119,7 +125,21 @@ export function resetMonth() {
     state.presupuestos = state.presupuestos.map(p => p.mensual ? { ...p, items: [] } : p);
     state.executedPayments = [];
     state.appliedIncomes = [];
+    // Abonos already lowered the auto debts' restante; they just stop being undoable.
+    state.deudaAbonos = {};
     saveState(state);
+}
+
+/**
+ * Monthly payment a debt contributes this month. "manual" debts (missing modo)
+ * always use pagoMensual. "auto" debts pay what was actually subtracted when
+ * executed, otherwise min(pagoMensual, restante) — so a paid-off one is 0.
+ */
+export function pagoDelMes(d, abonos = getState().deudaAbonos) {
+    const pago = parseFloat(d.pagoMensual) || 0;
+    if (d.modo !== 'auto') return pago;
+    if (abonos[d.id] != null) return abonos[d.id];
+    return Math.max(0, Math.min(pago, parseFloat(d.total) || 0));
 }
 
 // --- Presupuestos (spending envelopes) ---
@@ -268,11 +288,7 @@ export function addDeuda(deuda) {
 // --- Executed Payments Functions ---
 
 export function addExecutedPayment(paymentId) {
-    const state = getState();
-    if (!state.executedPayments.includes(paymentId)) {
-        state.executedPayments.push(paymentId);
-        saveState(state);
-    }
+    addExecutedPayments([paymentId]);
 }
 
 export function addExecutedPayments(paymentIds) {
@@ -280,6 +296,14 @@ export function addExecutedPayments(paymentIds) {
     const newPayments = paymentIds.filter(id => !state.executedPayments.includes(id));
     if (newPayments.length > 0) {
         state.executedPayments.push(...newPayments);
+        // Auto debts: executing the payment lowers the restante by that amount.
+        newPayments.forEach(id => {
+            const d = state.deudas.find(x => x.id === id);
+            if (!d || d.modo !== 'auto') return;
+            const amt = pagoDelMes(d, state.deudaAbonos);
+            d.total = Math.max(0, (parseFloat(d.total) || 0) - amt);
+            state.deudaAbonos[id] = amt;
+        });
         saveState(state);
     }
 }
@@ -287,6 +311,12 @@ export function addExecutedPayments(paymentIds) {
 export function removeExecutedPayment(paymentId) {
     const state = getState();
     state.executedPayments = state.executedPayments.filter(id => id !== paymentId);
+    const amt = state.deudaAbonos[paymentId];
+    if (amt != null) {
+        const d = state.deudas.find(x => x.id === paymentId);
+        if (d) d.total = (parseFloat(d.total) || 0) + amt;
+        delete state.deudaAbonos[paymentId];
+    }
     saveState(state);
 }
 
@@ -321,6 +351,7 @@ export function getDeudas() {
 export function deleteDeuda(id) {
     const state = getState();
     state.deudas = state.deudas.filter(deuda => deuda.id !== id);
+    delete state.deudaAbonos[id];
     saveState(state);
 }
 
@@ -349,6 +380,28 @@ function addCategory(type, category) {
 function deleteCategory(type, category) {
     const state = getState();
     state.categories[type] = state.categories[type].filter(c => c !== category);
+    saveState(state);
+}
+
+// Entries using a category: ingresos/gastos match `categoria`, deudas match `tipo`.
+function entriesFor(state, type) {
+    if (type === 'ingresos') return { list: state.ingresos, key: 'categoria' };
+    if (type === 'deudas') return { list: state.deudas, key: 'tipo' };
+    return { list: [...state.gastos, ...state.gastosRecurrentes], key: 'categoria' };
+}
+
+/** How many entries use `category` in the given group. */
+export function countCategoryUse(type, category) {
+    const { list, key } = entriesFor(getState(), type);
+    return list.filter(x => x[key] === category).length;
+}
+
+/** Moves every entry from category `from` to `to`, then deletes `from`. */
+export function moveAndDeleteCategory(type, from, to) {
+    const state = getState();
+    const { list, key } = entriesFor(state, type);
+    list.forEach(x => { if (x[key] === from) x[key] = to; });
+    state.categories[type] = state.categories[type].filter(c => c !== from);
     saveState(state);
 }
 

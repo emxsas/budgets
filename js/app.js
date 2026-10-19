@@ -7,6 +7,7 @@ import { renderDeuda, initDeuda } from './deuda.js';
 import { renderEjecucion, initEjecucion, resetEjecucionSelection } from './ejecucion.js';
 import { renderAjustes, initAjustes } from './settings.js';
 import { initSheet, openPicker } from './sheet.js';
+import { initTour, maybeAutoStartTour } from './tour.js';
 
 const TABS = {
     resumen: { title: 'Resumen', render: renderResumen },
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initEjecucion();
     initAjustes();
     initSheet();
+    initTour({ setTab });
 
     // Navigation + Add via document-level delegation (works for the static nav
     // and for dynamically rendered entries like the Resumen "Presupuestos" card).
@@ -62,4 +64,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('data-changed', () => TABS[currentTab].render());
 
     setTab('resumen');
+    maybeAutoStartTour();
 });
