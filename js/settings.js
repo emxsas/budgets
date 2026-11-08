@@ -55,10 +55,10 @@ function groupMarkup(g) {
     const chips = g.get().map(c => {
         const card = cards.includes(c);
         const toggle = isDeuda
-            ? `<button data-cat-tdc="${esc(c)}" aria-pressed="${card}" aria-label="${card ? 'Quitar marca de tarjeta' : 'Marcar como tarjeta de crédito'}" title="${card ? 'Es tarjeta de crédito' : 'Marcar como tarjeta'}" style="width:22px;height:20px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;${card ? 'background:#f97316;color:#1a0f05' : 'background:#0e1113;color:#5f6d73'}">${icon('card', { size: 13, sw: 2 })}</button>`
+            ? `<button data-cat-tdc="${esc(c)}" aria-pressed="${card}" aria-label="${card ? 'Quitar marca de tarjeta' : 'Marcar como tarjeta de crédito'}" title="${card ? 'Es tarjeta de crédito' : 'Marcar como tarjeta'}" style="width:30px;height:28px;border-radius:8px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;${card ? 'background:#f97316;color:#1a0f05' : 'background:#0e1113;color:#5f6d73'}">${icon('card', { size: 13, sw: 2 })}</button>`
             : '';
         return `
-        <span style="display:inline-flex;align-items:center;gap:6px;background:${card ? '#2a1e12' : '#1c2226'};border:1px solid ${card ? '#f97316' : '#2a3237'};border-radius:99px;padding:${isDeuda ? '4px 8px 4px 5px' : '6px 8px 6px 12px'};font-size:12px;font-weight:600">${toggle}${esc(c)}
+        <span style="display:inline-flex;align-items:center;gap:6px;background:${card ? '#2a1e12' : '#1c2226'};border:1px solid ${card ? '#f97316' : '#2a3237'};border-radius:99px;padding:${isDeuda ? '3px 8px 3px 3px' : '6px 8px 6px 12px'};font-size:12px;font-weight:600">${toggle}${esc(c)}
             <button data-cat-del="${g.kind}" data-name="${esc(c)}" style="width:17px;height:17px;border-radius:50%;background:#2a1518;border:none;color:#f87171;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;padding:0">×</button>
         </span>`;
     }).join('');
@@ -122,8 +122,10 @@ function addFrom(kind) {
     const input = document.querySelector(`[data-cat-input="${kind}"]`);
     const value = input.value.trim();
     if (!value) { alert('El nombre de la categoría no puede estar vacío.'); return; }
+    const isNew = !g.get().includes(value);
     g.add(value);
-    if (kind === 'deudas' && document.querySelector('[data-cat-new-tdc]')?.checked) setTdcCategory(value, true);
+    // Only a newly created category takes the card mark (never re-marks an existing one).
+    if (isNew && kind === 'deudas' && document.querySelector('[data-cat-new-tdc]')?.checked) setTdcCategory(value, true);
     renderAjustes();
 }
 

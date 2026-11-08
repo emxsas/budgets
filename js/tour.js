@@ -15,6 +15,7 @@ const CH = {
     ajustes: ['Ajustes', '#9aa7ad'],
     mov: ['Movimientos', '#34d399'],
     extra: ['Fijo o extra', '#84cc16'],
+    tdc: ['Tarjetas', '#f97316'],
     deuda: ['Deudas', '#f97316'],
     ejec: ['Ejecución', '#22d3ee'],
     resumen: ['Resumen', '#34d399'],
@@ -37,7 +38,7 @@ const STEPS = [
     {
         center: true, tab: 'resumen', title: '¡Hola! Armemos tu presupuesto',
         body: 'En un minuto te enseño cómo funciona: categorías, movimientos, deudas, ejecución y el cierre de mes.',
-        visual: `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">${Object.values(CH).filter((_, i) => i !== 2).map(([t, c]) => chip(t, c)).join('')}</div>`
+        visual: `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">${Object.entries(CH).filter(([k]) => k !== 'extra' && k !== 'tdc').map(([, v]) => v).map(([t, c]) => chip(t, c)).join('')}</div>`
     },
     {
         ch: 'ajustes', tab: 'resumen', target: ['.topbar-gear', '.side-btn[data-tab="ajustes"]'],
@@ -52,7 +53,7 @@ const STEPS = [
             <div style="font-size:11px;color:#7c8a92;font-weight:600;margin-top:9px;line-height:1.4">Si borras una que está en uso, te preguntamos a cuál mover sus movimientos.</div>`)
     },
     {
-        ch: 'ajustes', tab: 'ajustes', target: '[data-tour="cats-deuda"]', title: 'Marca tus tarjetas',
+        ch: 'tdc', tab: 'ajustes', target: '[data-tour="cats-deuda"]', title: 'Marca tus tarjetas',
         body: 'En Deuda, toca el ícono de tarjeta para marcar las que son tarjetas de crédito. No necesitan llamarse “Tdc”.',
         visual: box(`<div style="display:flex;flex-wrap:wrap;gap:6px">
             <span style="display:inline-flex;align-items:center;gap:6px;background:#2a1e12;border:1px solid #f97316;border-radius:99px;padding:4px 10px 4px 5px;font-size:11.5px;font-weight:600;color:#e7edf0"><span style="width:20px;height:18px;border-radius:6px;background:#f97316;color:#1a0f05;display:flex;align-items:center;justify-content:center">${icon('card', { size: 12, sw: 2 })}</span>Banorte</span>
@@ -78,7 +79,7 @@ const STEPS = [
             row(`<span>Súper ${pill('Extra', '#f43f5e', '#2a1518')}</span>`, '$1,800'))
     },
     {
-        ch: 'extra', sheet: 'gasto', target: '[data-tour="sh-tdc"]', title: '¿Lo pagaste con tarjeta?',
+        ch: 'tdc', sheet: 'gasto', target: '[data-tour="sh-tdc"]', title: '¿Lo pagaste con tarjeta?',
         body: 'Marca <b>Pagado con TDC</b> y elige la tarjeta. Sigue siendo un gasto (no se suma a la deuda), pero en Ejecución lo verás junto con esa tarjeta.',
         visual: box(row(`<span style="display:flex;align-items:center;gap:6px">Netflix ${pill('Recurrente', '#22d3ee', '#122229')} ${tdcPill('Banorte')}</span>`, '$299'))
     },

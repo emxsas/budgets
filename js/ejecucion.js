@@ -88,11 +88,11 @@ function projectionItems(key, payments) {
         'all:extra': p => p.sourceType === 'Gasto extra',
         'all:deuda': p => p.sourceType === 'Deuda',
         // Cards: their debts plus the gastos paid with any card.
-        'all:tdc': p => (p.sourceType === 'Deuda' && cards.includes(p.source)) || (isGasto(p) && !!p.tdc),
+        'all:tdc': p => (p.sourceType === 'Deuda' && cards.includes(p.source)) || (isGasto(p) && cards.includes(p.tdc)),
         'all:presupuestos': p => p.sourceType === 'Presupuesto'
     }[key] || (kind === 'gasto' ? p => isGasto(p) && p.source === val
         // A deuda category also pulls in the gastos paid with it (when it is a card).
-        : kind === 'deuda' ? p => (p.sourceType === 'Deuda' && p.source === val) || (isGasto(p) && p.tdc === val)
+        : kind === 'deuda' ? p => (p.sourceType === 'Deuda' && p.source === val) || (isGasto(p) && p.tdc === val && cards.includes(val))
         : () => false);
     return { income: false, items: payments.filter(match) };
 }
