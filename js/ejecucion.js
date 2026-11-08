@@ -3,11 +3,11 @@
 // bulk execute); only the presentation is reworked to the new design.
 import {
     getIngresos, getGastos, getGastosRecurrentes, getDeudas, getPresupuestos,
-    getIngresoCategories, getGastoCategories, getDeudaCategories, pagoDelMes, getState,
+    getIngresoCategories, getGastoCategories, getDeudaCategories, getTdcCategories, pagoDelMes, getState,
     getExecutedPayments, addExecutedPayments, removeExecutedPayment,
     getAppliedIncomes, addAppliedIncome, removeAppliedIncome
 } from './storage.js';
-import { fmt, fmt0, sum, esc, icon } from './ui.js';
+import { fmt, fmt0, sum, esc, icon, tdcPill } from './ui.js';
 
 let selectedIds = [];
 // Current "Proyectar categoría" choice (transient, like the selection).
@@ -17,8 +17,8 @@ const PROJ_LIMIT = 6;
 
 function allPayments() {
     return [
-        ...getGastos().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Gasto extra', color: '#f43f5e' })),
-        ...getGastosRecurrentes().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Recurrente', color: '#22d3ee' })),
+        ...getGastos().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Gasto extra', color: '#f43f5e', tdc: g.tdc })),
+        ...getGastosRecurrentes().map(g => ({ id: g.id, desc: g.descripcion, amount: parseFloat(g.cantidad) || 0, source: g.categoria, sourceType: 'Recurrente', color: '#22d3ee', tdc: g.tdc })),
         // Auto debts pay min(pago, restante); once paid off they drop out (unless executed this month).
         ...(() => {
             const { deudaAbonos, executedPayments } = getState();
@@ -49,6 +49,7 @@ const PROJ_GROUPS = [
     ['all:rec', 'Fijos', 'Gastos fijos (recurrentes)', '#22d3ee'],
     ['all:extra', 'Extra', 'Gastos extra', '#f43f5e'],
     ['all:deuda', 'Deuda', 'Toda la deuda', '#f97316'],
+    ['all:tdc', 'Tarjetas', 'Tarjetas (deudas + gastos con TDC)', 'linear-gradient(135deg,#f97316 50%,#fbbf24 50%)'],
     ['all:presupuestos', 'Presupuestos', 'Presupuestos', '#a78bfa'],
     ['all:ingresos', 'Ingresos', 'Todos los ingresos', '#34d399']
 ];
@@ -79,21 +80,26 @@ function projectionItems(key, payments) {
         return { income: true, items };
     }
     const isGasto = p => p.sourceType === 'Gasto extra' || p.sourceType === 'Recurrente';
+    const cards = getTdcCategories();
     const match = {
         'all:pagos': () => true,
         'all:gastos': isGasto,
         'all:rec': p => p.sourceType === 'Recurrente',
         'all:extra': p => p.sourceType === 'Gasto extra',
         'all:deuda': p => p.sourceType === 'Deuda',
+        // Cards: their debts plus the gastos paid with any card.
+        'all:tdc': p => (p.sourceType === 'Deuda' && cards.includes(p.source)) || (isGasto(p) && !!p.tdc),
         'all:presupuestos': p => p.sourceType === 'Presupuesto'
     }[key] || (kind === 'gasto' ? p => isGasto(p) && p.source === val
-        : kind === 'deuda' ? p => p.sourceType === 'Deuda' && p.source === val
+        // A deuda category also pulls in the gastos paid with it (when it is a card).
+        : kind === 'deuda' ? p => (p.sourceType === 'Deuda' && p.source === val) || (isGasto(p) && p.tdc === val)
         : () => false);
     return { income: false, items: payments.filter(match) };
 }
 
 function projectionCard(payments, executed, applied) {
     const groups = projectionOptions();
+    const tdcCats = getTdcCategories();
     const group = PROJ_GROUPS.find(g => g[0] === projection);
     const isCat = groups.some(g => g.opts.some(([v]) => v === projection));
     if (!group && !isCat) projection = '';
@@ -112,7 +118,7 @@ function projectionCard(payments, executed, applied) {
 
     const options = `<option value=""${isCat ? '' : ' selected'}>Por categoría…</option>` +
         groups.map(g => `<optgroup label="${esc(g.label)}">${g.opts.map(([v, l]) =>
-            `<option value="${esc(v)}"${v === projection ? ' selected' : ''}>${esc(l)}</option>`).join('')}</optgroup>`).join('');
+            `<option value="${esc(v)}"${v === projection ? ' selected' : ''}>${esc(l)}${v.startsWith('deuda:') && tdcCats.includes(l) ? ' · tarjeta' : ''}</option>`).join('')}</optgroup>`).join('');
     const picker = `<div style="position:relative;margin-top:10px">
         <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;pointer-events:none;background:${catColor || '#3a444a'}"></span>
         <select id="ej-projection" class="field" style="padding:10px 12px 10px 30px;font-size:13.5px;font-weight:600;${isCat ? `border-color:${catColor};color:#fff` : 'color:#9aa7ad'}">${options}</select>
@@ -164,6 +170,7 @@ function projectionCard(payments, executed, applied) {
                             <span style="width:7px;height:7px;border-radius:2px;flex:none;background:${color}"></span>
                             <span style="font-size:10.5px;font-weight:700;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.source)}</span>
                             <span style="flex:none;font-size:9.5px;font-weight:600;color:#7c8a92;background:#0e1113;padding:1px 6px;border-radius:99px">${tag}</span>
+                            ${x.tdc ? tdcPill(x.tdc) : ''}
                         </div>
                     </div>
                     <span class="num" style="flex:none;font-size:13.5px;font-weight:700;color:${d ? '#7c8a92' : '#fff'}">${fmt0(x.amount)}</span>
@@ -172,6 +179,14 @@ function projectionCard(payments, executed, applied) {
             : `<div style="font-size:12px;color:#5f6d73;padding:10px 2px;border-top:1px solid #21282c;text-align:center">No hay movimientos en esta categoría.</div>`;
         const more = ordered.length > PROJ_LIMIT
             ? `<button data-action="proj-more" style="width:100%;background:transparent;border:none;border-top:1px solid #21282c;color:#9aa7ad;font-size:12px;font-weight:700;padding:10px 0 2px;cursor:pointer">${projExpanded ? 'Ver menos' : `Ver todos (${ordered.length})`}</button>`
+            : '';
+        // Card projections mix debts and gastos paid with the card: show the split.
+        const cardGastos = items.filter(x => x.tdc);
+        const split = !income && cardGastos.length && (projection === 'all:tdc' || kind === 'deuda')
+            ? `<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:10px;font-size:11.5px;font-weight:600;color:#9aa7ad">
+                    <span>Deudas <b class="num" style="color:#f97316">${fmt0(total - sum(cardGastos, x => x.amount))}</b></span>
+                    <span>Gastos con tarjeta <b class="num" style="color:#fbbf24">${fmt0(sum(cardGastos, x => x.amount))}</b></span>
+               </div>`
             : '';
         const unselected = income ? [] : pendItems.filter(x => !selectedIds.includes(x.id));
         const selectBtn = unselected.length
@@ -200,6 +215,7 @@ function projectionCard(payments, executed, applied) {
                         <div class="num" style="font-size:16px;font-weight:700;color:#34d399;margin-top:1px">${fmt0(total - pend)}</div>
                     </div>
                 </div>
+                ${split}
                 ${selectBtn}
             </div>
             <div style="margin-top:10px">${rows}${more}</div>`;
@@ -246,10 +262,11 @@ export function renderEjecucion() {
                 <div style="width:22px;height:22px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;border:1.5px solid ${checked ? '#34d399' : '#3a444a'};background:${checked ? '#34d399' : 'transparent'};color:#06231a">${check}</div>
                 <div style="flex:1;min-width:0">
                     <div style="font-size:13.5px;font-weight:600;${ex ? 'text-decoration:line-through;color:#7c8a92' : ''}">${esc(p.desc)}</div>
-                    <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:3px">
                         <span style="width:7px;height:7px;border-radius:2px;flex:none;background:${p.color}"></span>
                         <span style="font-size:10.5px;font-weight:700;color:${p.color}">${esc(p.source)}</span>
                         <span style="font-size:9.5px;font-weight:600;color:#7c8a92;background:#0e1113;padding:1px 6px;border-radius:99px">${p.sourceType}</span>
+                        ${p.tdc ? tdcPill(p.tdc) : ''}
                     </div>
                 </div>
                 <span class="num" style="font-size:14px;font-weight:700;flex:none;${ex ? 'color:#7c8a92' : 'color:#fff'}">${fmt0(p.amount)}</span>

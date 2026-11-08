@@ -11,6 +11,9 @@ const defaultState = {
     // Amount subtracted this month from each "auto" debt's restante when its
     // payment was executed ({ [deudaId]: amount }); lets Deshacer restore it.
     deudaAbonos: {},
+    // Deuda categories that are credit cards. A gasto may point at one via
+    // `gasto.tdc` (paid with that card): it stays a gasto, never a debt.
+    tdcCategories: [],
     categories: {
         ingresos: ["Salario", "Ventas", "Regalo", "Otros"],
         gastos: ["Comida", "Transporte", "Vivienda", "Ocio", "Facturas", "Otros"],
@@ -73,6 +76,9 @@ export function getState() {
     if (!finalState.deudaAbonos || typeof finalState.deudaAbonos !== 'object') {
         finalState.deudaAbonos = {};
     }
+    if (!Array.isArray(finalState.tdcCategories)) {
+        finalState.tdcCategories = [];
+    }
 
     return finalState;
 }
@@ -106,6 +112,7 @@ export function saveGasto(gasto) {
     state.gastos = state.gastos.filter(g => g.id !== id);
     state.gastosRecurrentes = state.gastosRecurrentes.filter(g => g.id !== id);
     const obj = { id, categoria: gasto.categoria, descripcion: gasto.descripcion, cantidad: gasto.cantidad };
+    if (gasto.tdc) obj.tdc = gasto.tdc;
     if (gasto.extra) state.gastos.push(obj);
     else state.gastosRecurrentes.push(obj);
     saveState(state);
@@ -380,6 +387,7 @@ function addCategory(type, category) {
 function deleteCategory(type, category) {
     const state = getState();
     state.categories[type] = state.categories[type].filter(c => c !== category);
+    if (type === 'deudas') state.tdcCategories = state.tdcCategories.filter(c => c !== category);
     saveState(state);
 }
 
@@ -390,18 +398,49 @@ function entriesFor(state, type) {
     return { list: [...state.gastos, ...state.gastosRecurrentes], key: 'categoria' };
 }
 
-/** How many entries use `category` in the given group. */
+const allGastos = state => [...state.gastos, ...state.gastosRecurrentes];
+
+/** How many entries use `category` in the given group (for a card, also the gastos paid with it). */
 export function countCategoryUse(type, category) {
-    const { list, key } = entriesFor(getState(), type);
-    return list.filter(x => x[key] === category).length;
+    const state = getState();
+    const { list, key } = entriesFor(state, type);
+    const tdc = type === 'deudas' ? allGastos(state).filter(g => g.tdc === category).length : 0;
+    return list.filter(x => x[key] === category).length + tdc;
 }
 
-/** Moves every entry from category `from` to `to`, then deletes `from`. */
+/** Moves every entry from category `from` to `to`, then deletes `from`.
+ *  Gastos paid with card `from` follow it when `to` is a card; otherwise they lose the link. */
 export function moveAndDeleteCategory(type, from, to) {
     const state = getState();
     const { list, key } = entriesFor(state, type);
     list.forEach(x => { if (x[key] === from) x[key] = to; });
+    if (type === 'deudas') {
+        const toIsCard = state.tdcCategories.includes(to);
+        allGastos(state).forEach(g => { if (g.tdc === from) { if (toIsCard) g.tdc = to; else delete g.tdc; } });
+        state.tdcCategories = state.tdcCategories.filter(c => c !== from);
+    }
     state.categories[type] = state.categories[type].filter(c => c !== from);
+    saveState(state);
+}
+
+// --- Credit-card (TDC) marks on deuda categories ---
+
+export function getTdcCategories() {
+    const state = getState();
+    return state.tdcCategories.filter(c => state.categories.deudas.includes(c));
+}
+
+/** How many gastos are paid with this card. */
+export function countTdcGastos(category) {
+    return allGastos(getState()).filter(g => g.tdc === category).length;
+}
+
+/** Marks / unmarks a deuda category as a credit card. Unmarking unlinks its gastos. */
+export function setTdcCategory(category, isCard) {
+    const state = getState();
+    state.tdcCategories = state.tdcCategories.filter(c => c !== category);
+    if (isCard) state.tdcCategories.push(category);
+    else allGastos(state).forEach(g => { if (g.tdc === category) delete g.tdc; });
     saveState(state);
 }
 

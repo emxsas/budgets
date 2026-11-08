@@ -6,7 +6,7 @@ import {
     getIngresos, getGastos, getGastosRecurrentes,
     deleteIngreso, deleteGasto, deleteGastoRecurrente
 } from './storage.js';
-import { fmt0, sum, esc, icon, GRASS } from './ui.js';
+import { fmt0, sum, esc, icon, GRASS, tdcPill } from './ui.js';
 import { openEdit } from './sheet.js';
 
 const MINT = '#34d399';
@@ -25,11 +25,11 @@ function ingresoItems() {
 
 function gastoItems() {
     const recs = getGastosRecurrentes().map(g => ({
-        id: g.id, type: 'gasto', extra: false, descripcion: g.descripcion, categoria: g.categoria, cantidad: g.cantidad,
+        id: g.id, type: 'gasto', extra: false, descripcion: g.descripcion, categoria: g.categoria, cantidad: g.cantidad, tdc: g.tdc,
         color: '#22d3ee', iconBg: '#122229', tag: 'Recurrente'
     }));
     const extras = getGastos().map(g => ({
-        id: g.id, type: 'gasto', extra: true, descripcion: g.descripcion, categoria: g.categoria, cantidad: g.cantidad,
+        id: g.id, type: 'gasto', extra: true, descripcion: g.descripcion, categoria: g.categoria, cantidad: g.cantidad, tdc: g.tdc,
         color: '#f43f5e', iconBg: '#2a1518', tag: 'Extra'
     }));
     return recs.concat(extras);
@@ -53,7 +53,7 @@ function rowMarkup(item, sign) {
         <div class="num" style="width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;background:${item.iconBg};color:${item.color};font-weight:700;font-size:14px">${esc(initial)}</div>
         <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.descripcion)}</div>
-            <div style="font-size:11px;color:#7c8a92;font-weight:600;margin-top:1px">${esc(item.categoria)}${item.tag ? ` · <span style="color:${item.color}">${item.tag}</span>` : ''}</div>
+            <div style="font-size:11px;color:#7c8a92;font-weight:600;margin-top:1px">${esc(item.categoria)}${item.tag ? ` · <span style="color:${item.color}">${item.tag}</span>` : ''}${item.tdc ? ' ' + tdcPill(item.tdc) : ''}</div>
         </div>
         <div class="num" style="font-size:15px;font-weight:700;color:${item.color};flex:none">${sign}${fmt0(item.cantidad)}</div>
         <div style="display:flex;gap:4px;flex:none">

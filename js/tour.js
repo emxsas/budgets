@@ -6,6 +6,7 @@
 // The "seen" flag lives in its own localStorage key, outside budgetAppData.
 import { getState } from './storage.js';
 import { openAdd, closeSheet } from './sheet.js';
+import { icon, tdcPill } from './ui.js';
 
 const FLAG_KEY = 'budgetAppTour';
 const FLAG_VERSION = 1;
@@ -51,6 +52,14 @@ const STEPS = [
             <div style="font-size:11px;color:#7c8a92;font-weight:600;margin-top:9px;line-height:1.4">Si borras una que está en uso, te preguntamos a cuál mover sus movimientos.</div>`)
     },
     {
+        ch: 'ajustes', tab: 'ajustes', target: '[data-tour="cats-deuda"]', title: 'Marca tus tarjetas',
+        body: 'En Deuda, toca el ícono de tarjeta para marcar las que son tarjetas de crédito. No necesitan llamarse “Tdc”.',
+        visual: box(`<div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span style="display:inline-flex;align-items:center;gap:6px;background:#2a1e12;border:1px solid #f97316;border-radius:99px;padding:4px 10px 4px 5px;font-size:11.5px;font-weight:600;color:#e7edf0"><span style="width:20px;height:18px;border-radius:6px;background:#f97316;color:#1a0f05;display:flex;align-items:center;justify-content:center">${icon('card', { size: 12, sw: 2 })}</span>Banorte</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;background:#1c2226;border:1px solid #2a3237;border-radius:99px;padding:4px 10px 4px 5px;font-size:11.5px;font-weight:600;color:#e7edf0"><span style="width:20px;height:18px;border-radius:6px;background:#0e1113;color:#5f6d73;display:flex;align-items:center;justify-content:center">${icon('card', { size: 12, sw: 2 })}</span>Préstamo Personal</span>
+        </div>`)
+    },
+    {
         ch: 'mov', tab: 'resumen', target: ['.fab', '.btn-add-side'], title: 'Registra con el +',
         body: 'Toca + y elige qué quieres añadir: un ingreso, un gasto o una deuda.',
         visual: box(`<div style="display:flex;gap:6px">${[['Ingreso', '#34d399'], ['Gasto', '#f43f5e'], ['Deuda', '#f97316']].map(([t, c]) =>
@@ -67,6 +76,11 @@ const STEPS = [
         body: 'Sin marcar, el gasto es fijo (renta, internet) y se repite cada mes. Marca <b>Extra</b> si es solo de este mes, como el súper.',
         visual: box(row(`<span>Renta ${pill('Recurrente', '#22d3ee', '#122229')}</span>`, '$6,000') +
             row(`<span>Súper ${pill('Extra', '#f43f5e', '#2a1518')}</span>`, '$1,800'))
+    },
+    {
+        ch: 'extra', sheet: 'gasto', target: '[data-tour="sh-tdc"]', title: '¿Lo pagaste con tarjeta?',
+        body: 'Marca <b>Pagado con TDC</b> y elige la tarjeta. Sigue siendo un gasto (no se suma a la deuda), pero en Ejecución lo verás junto con esa tarjeta.',
+        visual: box(row(`<span style="display:flex;align-items:center;gap:6px">Netflix ${pill('Recurrente', '#22d3ee', '#122229')} ${tdcPill('Banorte')}</span>`, '$299'))
     },
     {
         ch: 'deuda', sheet: 'deuda', target: '[data-tour="sh-deuda-montos"]', title: 'Tus deudas',
@@ -100,7 +114,8 @@ const STEPS = [
     },
     {
         ch: 'ejec', tab: 'ejecucion', target: '[data-tour="ej-proj"]', title: 'Proyecta una categoría',
-        body: 'Elige un grupo (Fijos, Extra, Deuda…) o una categoría y ve cuánto falta y cuánto ya pagaste. <b>Seleccionar pendientes</b> los marca de un toque.'
+        body: 'Elige un grupo (Fijos, Extra, Deuda, Tarjetas…) o una categoría y ve cuánto falta y cuánto ya pagaste. Si eliges una tarjeta, suma sus deudas y los gastos pagados con ella.',
+        visual: box(row('Deudas', '$3,900', '#f97316') + row('Gastos con tarjeta', '$1,800', '#fbbf24'))
     },
     {
         ch: 'resumen', tab: 'resumen', target: '[data-tour="res-disp"]', title: 'Disponible este mes',

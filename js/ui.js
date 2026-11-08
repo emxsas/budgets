@@ -45,11 +45,17 @@ const PATHS = {
     ingreso: '<path d="M12 19V5M5 12l7-7 7 7"/>',
     recurrente: '<path d="M17 2l4 4-4 4M21 6H7a4 4 0 0 0-4 4v1M7 22l-4-4 4-4M3 18h14a4 4 0 0 0 4-4v-1"/>',
     extra: '<path d="M12 5v14M19 12l-7 7-7-7"/>',
-    deudaPick: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>'
+    deudaPick: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>',
+    card: '<rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19M6.5 15h3"/>'
 };
 
 export function icon(name, { size = 20, sw = 1.9 } = {}) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${PATHS[name] || ''}</svg>`;
+}
+
+// Small orange pill naming the credit card a gasto was paid with.
+export function tdcPill(name) {
+    return `<span style="flex:none;display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#f97316;background:#2a1e12;padding:1px 6px 1px 4px;border-radius:99px;max-width:120px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:middle">${icon('card', { size: 10, sw: 2.2 })}${esc(name)}</span>`;
 }
 
 // Distinct "grass" green used to flag ephemeral incomes (vs the teal mint #34d399).

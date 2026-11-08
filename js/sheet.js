@@ -4,7 +4,7 @@
 // line-items are opened directly from the Presupuestos section.
 import {
     getIngresos, getGastos, getGastosRecurrentes, getDeudas, getPresupuestos,
-    getIngresoCategories, getGastoCategories, getDeudaCategories,
+    getIngresoCategories, getGastoCategories, getDeudaCategories, getTdcCategories,
     addIngreso, updateIngreso, saveGasto, addDeuda, updateDeuda,
     savePresupuesto, savePresupuestoItem
 } from './storage.js';
@@ -50,7 +50,7 @@ export function openEdit(type, id) {
     if (type === 'deuda') {
         form = { tipo: item.tipo, descripcion: item.descripcion, pagoMensual: item.pagoMensual, total: item.total, original: item.original != null ? item.original : item.total, modo: item.modo === 'auto' ? 'auto' : 'manual' };
     } else if (type === 'gasto') {
-        form = { cat: item.categoria, descripcion: item.descripcion, cantidad: item.cantidad, extra: getGastos().some(x => x.id === id) };
+        form = { cat: item.categoria, descripcion: item.descripcion, cantidad: item.cantidad, extra: getGastos().some(x => x.id === id), tdc: item.tdc || '' };
     } else if (type === 'presupuesto') {
         form = { nombre: item.nombre, limite: item.limite, mensual: !!item.mensual };
     } else {
@@ -100,6 +100,20 @@ function modoPicker(val) {
     </div>`;
 }
 
+// "Pagado con TDC" checkbox + card picker (only deuda categories marked as cards).
+// The gasto stays a gasto; the link only groups it with its card in Ejecución.
+function tdcBlock(val) {
+    const cards = getTdcCategories();
+    if (val && !cards.includes(val)) cards.push(val);
+    const picker = cards.length
+        ? `<select id="sh-tdc" class="field">${cards.map(c => `<option value="${esc(c)}"${c === val ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`
+        : `<div style="font-size:12px;color:#fbbf24;font-weight:600;line-height:1.45">Aún no tienes tarjetas. Márcalas en Ajustes → Deuda con el ícono de tarjeta.</div>`;
+    return `<div data-tour="sh-tdc">
+        ${checkboxRow('sh-tdc-on', 'Pagado con TDC', !!val)}
+        <div id="sh-tdc-wrap" style="margin-top:8px;${val ? '' : 'display:none'}">${picker}</div>
+    </div>`;
+}
+
 function field(label, inner, hint) {
     return `<div><label class="field-label">${label}${hint ? ` <span style="color:#5f6d73;font-weight:600">${hint}</span>` : ''}</label>${inner}</div>`;
 }
@@ -130,7 +144,8 @@ function formMarkup() {
         body = `${field('Categoría', `<select id="sh-cat" class="field">${optionsFor(t, f.cat)}</select>`)}
             ${field('Descripción', textInput('sh-descripcion', f.descripcion, cfg.placeholder))}
             ${field('Cantidad', numInput('sh-cantidad', f.cantidad, '1500'))}
-            ${checkbox}`;
+            ${checkbox}
+            ${t === 'gasto' ? tdcBlock(f.tdc) : ''}`;
     }
     return `<div style="display:flex;flex-direction:column;gap:13px">
         ${body}
@@ -191,7 +206,9 @@ function save() {
             if (state.editId) updateIngreso({ id: state.editId, ...obj });
             else addIngreso(obj);
         } else {
-            saveGasto({ id: editId, extra: document.getElementById('sh-extra').checked, categoria, descripcion, cantidad: amount });
+            const tdcSel = document.getElementById('sh-tdc');
+            const tdc = document.getElementById('sh-tdc-on').checked && tdcSel ? tdcSel.value : '';
+            saveGasto({ id: editId, extra: document.getElementById('sh-extra').checked, categoria, descripcion, cantidad: amount, tdc });
         }
     }
     closeSheet();
@@ -207,5 +224,10 @@ export function initSheet() {
         if (action && action.dataset.sheet === 'save') { save(); return; }
         if (action && action.dataset.sheet === 'close') { closeSheet(); return; }
         if (overlay && e.target === overlay) { closeSheet(); }
+    });
+    root.addEventListener('change', (e) => {
+        if (e.target.id !== 'sh-tdc-on') return;
+        const wrap = document.getElementById('sh-tdc-wrap');
+        if (wrap) wrap.style.display = e.target.checked ? '' : 'none';
     });
 }
